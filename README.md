@@ -34,8 +34,13 @@ pnpm run format:check
 pnpm run lint
 pnpm run typecheck
 pnpm test
+pnpm run test:e2e
+pnpm run test:watch
 pnpm run build
 ```
+
+Unit tests use the `*.spec.ts` suffix and live beside the source they cover. The application E2E
+suite follows the NestJS directory convention at `test/app.e2e.spec.ts`.
 
 Formatting is provided by Oxfmt and linting by Oxlint. Their project configuration lives in `.oxfmtrc.json` and `.oxlintrc.json`.
 

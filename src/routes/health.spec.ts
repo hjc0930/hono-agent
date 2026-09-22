@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createApp } from '../../src/main.ts'
+import { createApp } from '../main.ts'
 
 describe('GET /health', () => {
   it('returns the documented health payload and request ID', async () => {

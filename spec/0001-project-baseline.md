@@ -45,6 +45,7 @@ This project provides a durable REST backend baseline for a future web applicati
 src/
   main.ts                # Hono application composition
   server.ts              # Node.js HTTP server entry point
+  server.spec.ts         # Colocated server unit tests
   config/
     env.ts               # Zod-validated environment settings
   lib/
@@ -52,10 +53,12 @@ src/
     logger.ts            # Pino logger construction
   middleware/
     error-handler.ts     # Error normalization and JSON failures
+    error-handler.spec.ts
     request-context.ts   # Request ID and request lifecycle logging
     security.ts          # CORS and security headers composition
   routes/
     health.ts            # Health endpoint and OpenAPI registration
+    health.spec.ts
   schemas/
     health.ts            # Example Zod request/response schemas
   services/              # Future business logic
@@ -63,10 +66,8 @@ src/
   db/
     client.ts            # Deferred Drizzle client wiring; no connection on import
   openapi.ts             # OpenAPI document and Swagger registration
-tests/
-  integration/
-    health.test.ts
-    error-handler.test.ts
+test/
+  app.e2e.spec.ts        # Full application HTTP test
 spec/
   0001-project-baseline.md
 ```
@@ -125,7 +126,10 @@ Runtime configuration is parsed at startup with Zod. Required variables are docu
 
 ## Testing strategy
 
-- Use Vitest integration tests against the exported Hono app via `app.request()`; do not require a listening port.
+- Keep Vitest unit tests beside source files using the `*.spec.ts` suffix.
+- Keep E2E tests under `test/` using the Vitest-compatible `*.e2e.spec.ts` suffix.
+- Use the exported Hono app via `app.request()` for focused route and middleware tests.
+- Start the application on an ephemeral loopback port for E2E coverage; do not require a manually started server.
 - Cover `GET /health` success behavior.
 - Cover the error middleware for a known application error and an unexpected thrown error, asserting status, stable error code, and request ID.
 - Add tests for each new route, validation boundary, and error response contract.
@@ -161,7 +165,7 @@ Completed on 2026-08-20:
 - `pnpm run format:check` passed.
 - `pnpm run lint` passed.
 - `pnpm run typecheck` passed.
-- `pnpm test` passed: 3 test files and 7 tests cover the health endpoint, OpenAPI/Swagger registration, known/unexpected error handling, port fallback, and readable startup address output.
+- `pnpm test` and `pnpm run test:e2e` passed: colocated unit tests and the application E2E suite cover the health endpoint, OpenAPI/Swagger registration, known/unexpected error handling, port fallback, and readable startup address output.
 - `pnpm run build` passed and produced `dist/server.js`.
 - In-process integration tests verified `GET /health` and OpenAPI route registration without requiring a listening port.
 

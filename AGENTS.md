@@ -20,8 +20,10 @@ The project requires Node.js 22+ and pnpm. Run commands from the repository root
 - `pnpm run format:check` — verify formatting without changing files.
 - `pnpm run lint` — run Oxlint.
 - `pnpm run typecheck` — run TypeScript checking without emitting files.
-- `pnpm test` — run the entire Vitest suite.
-- `pnpm test -- tests/integration/<file>.test.ts` — run one integration test file while iterating.
+- `pnpm test` — run colocated unit tests once.
+- `pnpm run test:e2e` — run the application E2E suite.
+- `pnpm run test:watch` — watch colocated unit tests while developing.
+- `pnpm test -- src/<path>/<file>.spec.ts` — run one unit test file while iterating.
 - `pnpm run build` — build the production server into `dist/` with tsup.
 
 ### Database commands
@@ -49,7 +51,8 @@ The project requires Node.js 22+ and pnpm. Run commands from the repository root
 
 ## Testing
 
-- Write permanent tests in TypeScript under `tests/`.
+- Keep unit tests beside their source as `*.spec.ts` files.
+- Keep application E2E tests in `test/` as `*.e2e.spec.ts` files.
 - Every new behavior or bug fix requires focused test coverage.
 - Test both success and failure paths, including relevant boundary cases.
 - Keep tests hermetic: do not require a live database, network access, real credentials, or a manually started server.

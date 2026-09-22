@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { createApp } from '../../src/main.ts'
-import { AppError } from '../../src/lib/errors.ts'
+import { createApp } from '../main.ts'
+import { AppError } from '../lib/errors.ts'
 
 describe('error responses', () => {
   it('returns a stable JSON response for a known application error', async () => {
