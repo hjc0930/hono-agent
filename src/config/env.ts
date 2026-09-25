@@ -6,6 +6,11 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   CORS_ORIGINS: z.string().default(''),
   DATABASE_URL: z.url().optional().or(z.literal('')),
+  JWT_SECRET: z.string().min(32),
+  AUTH_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(900),
+  AUTH_REFRESH_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(604_800),
+  SEED_ADMIN_USERNAME: z.string().optional(),
+  SEED_ADMIN_PASSWORD: z.string().optional(),
 })
 
 export type Env = z.infer<typeof envSchema>

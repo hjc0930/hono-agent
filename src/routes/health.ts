@@ -5,6 +5,7 @@ import { healthResponseSchema } from '../schemas/health.ts'
 export const healthRoute = createRoute({
   method: 'get',
   path: '/health',
+  security: [],
   responses: {
     200: {
       content: {

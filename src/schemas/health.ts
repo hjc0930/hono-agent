@@ -1,7 +1,9 @@
 import { z } from '@hono/zod-openapi'
 
-export const healthResponseSchema = z.object({
-  data: z.object({
+import { successEnvelopeSchema } from './envelope.ts'
+
+export const healthResponseSchema = successEnvelopeSchema(
+  z.object({
     status: z.literal('ok'),
   }),
-})
+)

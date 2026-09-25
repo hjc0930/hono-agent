@@ -1,30 +1,37 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { createApp } from '../main.ts'
 import { AppError } from '../lib/errors.ts'
 
+afterEach(() => {
+  vi.unstubAllEnvs()
+})
+
 describe('error responses', () => {
-  it('returns a stable JSON response for a known application error', async () => {
+  it('returns the common failure envelope for a known application error', async () => {
     const app = createApp()
     app.get('/known-error', () => {
-      throw new AppError(400, 'VALIDATION_ERROR', 'Invalid request')
+      throw new AppError(400, 'SOME_CODE', 'Invalid request', ['field: is wrong'])
     })
 
     const response = await app.request('/known-error', {
       headers: { 'x-request-id': 'test-request-id' },
     })
+    const body = await response.json()
 
     expect(response.status).toBe(400)
-    await expect(response.json()).resolves.toEqual({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid request',
-        requestId: 'test-request-id',
-      },
+    expect(body).toMatchObject({
+      path: '/known-error',
+      message: 'Invalid request',
+      code: 'SOME_CODE',
+      errors: { message: ['field: is wrong'] },
     })
+    expect(typeof body.date).toBe('string')
+    expect(response.headers.get('x-request-id')).toBe('test-request-id')
   })
 
-  it('does not expose unexpected error details', async () => {
+  it('does not expose unexpected error details in production', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
     const app = createApp()
     app.get('/unexpected-error', () => {
       throw new Error('database password must stay private')
@@ -35,11 +42,23 @@ describe('error responses', () => {
 
     expect(response.status).toBe(500)
     expect(body).toMatchObject({
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Internal server error',
-      },
+      code: 'INTERNAL_ERROR',
+      message: 'Internal server error',
     })
     expect(JSON.stringify(body)).not.toContain('database password')
+    expect(body.errors.stack).toBeUndefined()
+  })
+
+  it('includes the stack for unexpected errors outside production', async () => {
+    const app = createApp()
+    app.get('/unexpected-error', () => {
+      throw new Error('debug-only detail')
+    })
+
+    const response = await app.request('/unexpected-error')
+    const body = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(typeof body.errors.stack).toBe('string')
   })
 })

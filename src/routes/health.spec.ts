@@ -3,14 +3,19 @@ import { describe, expect, it } from 'vitest'
 import { createApp } from '../main.ts'
 
 describe('GET /health', () => {
-  it('returns the documented health payload and request ID', async () => {
+  it('returns the health payload in the common envelope and a request ID header', async () => {
     const response = await createApp().request('/health')
+    const body = await response.json()
 
     expect(response.status).toBe(200)
     expect(response.headers.get('x-request-id')).toBeTruthy()
-    await expect(response.json()).resolves.toEqual({
+    expect(body).toMatchObject({
+      path: '/health',
+      message: 'OK',
+      code: 'OK',
       data: { status: 'ok' },
     })
+    expect(body.date).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
   })
 
   it('publishes the OpenAPI document and Swagger UI', async () => {

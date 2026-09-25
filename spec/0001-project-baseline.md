@@ -6,7 +6,7 @@ Completed.
 
 ## Background
 
-This project provides a durable REST backend baseline for a future web application. It must make later business modules and AI or Agent integrations predictable without prematurely implementing those features.
+This project provides a durable REST backend baseline for a future web application. It must make later business modules predictable without prematurely implementing those features.
 
 ## Goals
 
@@ -20,7 +20,6 @@ This project provides a durable REST backend baseline for a future web applicati
 
 - Database tables, migrations, or any connection to a real PostgreSQL instance.
 - Authentication, authorization, users, JWT, or business modules.
-- Agent orchestration, RAG, LLM calls, or third-party model integrations.
 - Infrastructure beyond the application baseline.
 
 ## Technology stack and rationale
@@ -156,7 +155,7 @@ Runtime configuration is parsed at startup with Zod. Required variables are docu
 - `pnpm run dev` starts the Node.js service on `PORT` or the next available higher port; `GET /health` returns the documented success payload.
 - `GET /openapi.json` returns an OpenAPI document and `GET /docs` renders Swagger UI.
 - Invalid and unmatched requests return the documented JSON error format with a request ID.
-- No database connection, migration, real secret, authentication mechanism, business module, or AI/Agent feature is introduced.
+- No database connection, migration, real secret, authentication mechanism, or business module is introduced.
 
 ## Verification record
 
@@ -204,3 +203,18 @@ Completed on 2026-08-24:
 - Startup logs retries structurally and prints a readable terminal block with the selected port plus the application, Swagger, and OpenAPI URLs.
 - Other startup errors are surfaced without retrying.
 - An integration test reserves a local port and verifies that the application starts on a higher available port.
+
+## Direction update record
+
+Updated on 2026-09-24:
+
+- The product direction was set to a ticket system backend; see `spec/0002-ticket-system-roadmap.md`.
+- The exploratory AI/Agent integration references in this specification were removed. The baseline scope itself is unchanged.
+
+## API response envelope record
+
+Updated on 2026-09-24:
+
+- All API response shapes are governed by `spec/common/api-response-comment.md`, which supersedes the success/error shapes described in "API conventions" above. Other documents reference that file instead of restating envelope fields.
+- Error bodies no longer carry `requestId`; clients use the `x-request-id` response header instead.
+- Endpoints adopt the new envelope in the implementing change for that common specification; the acceptance criteria above reflect the state at their completion time.

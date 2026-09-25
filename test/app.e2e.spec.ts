@@ -46,14 +46,18 @@ describe('Application (e2e)', () => {
     expect(selectedPort).toBeGreaterThan(occupiedPort)
   })
 
-  it('GET /health returns the public health contract', async () => {
+  it('GET /health returns the common envelope', async () => {
     const response = await fetch(`${baseUrl}/health`, {
       headers: { 'x-request-id': 'e2e-health-request' },
     })
+    const body = await response.json()
 
     expect(response.status).toBe(200)
     expect(response.headers.get('x-request-id')).toBe('e2e-health-request')
-    await expect(response.json()).resolves.toEqual({
+    expect(body).toMatchObject({
+      path: '/health',
+      message: 'OK',
+      code: 'OK',
       data: { status: 'ok' },
     })
   })
@@ -70,18 +74,19 @@ describe('Application (e2e)', () => {
     await expect(docsResponse.text()).resolves.toContain('SwaggerUI')
   })
 
-  it('returns the standard error contract for an unknown route', async () => {
+  it('returns the failure envelope for an unknown route', async () => {
     const response = await fetch(`${baseUrl}/missing`, {
       headers: { 'x-request-id': 'e2e-missing-request' },
     })
+    const body = await response.json()
 
     expect(response.status).toBe(404)
-    await expect(response.json()).resolves.toEqual({
-      error: {
-        code: 'NOT_FOUND',
-        message: 'Route not found',
-        requestId: 'e2e-missing-request',
-      },
+    expect(body).toMatchObject({
+      path: '/missing',
+      message: 'Route not found',
+      code: 'NOT_FOUND',
+      errors: { message: ['Route not found'] },
     })
+    expect(response.headers.get('x-request-id')).toBe('e2e-missing-request')
   })
 })

@@ -1,0 +1,211 @@
+import { describe, expect, it } from 'vitest'
+
+import { signAccessToken } from '../lib/access-token.ts'
+import { hashPassword } from '../lib/password.ts'
+import { MemoryRefreshTokenRepository, MemoryUserRepository } from '../repositories/fakes.ts'
+import { createApp } from '../main.ts'
+import { loginResponseSchema, meResponseSchema } from '../schemas/auth.ts'
+
+const PASSWORD = 'correct-horse-battery'
+
+const buildApp = async () => {
+  const userRepository = new MemoryUserRepository()
+  const refreshTokenRepository = new MemoryRefreshTokenRepository()
+  const app = createApp({ userRepository, refreshTokenRepository })
+  const admin = await userRepository.insert({
+    username: 'admin',
+    passwordHash: await hashPassword(PASSWORD),
+    displayName: 'Administrator',
+    role: 'admin',
+    status: 'active',
+  })
+  return { app, userRepository, admin }
+}
+
+const post = (app: ReturnType<typeof createApp>, path: string, body: unknown, token?: string) =>
+  app.request(path, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  })
+
+describe('POST /api/auth/login (route)', () => {
+  it('returns the token pair in the common envelope and matches the response schema', async () => {
+    const { app } = await buildApp()
+
+    const response = await post(app, '/api/auth/login', {
+      username: 'admin',
+      password: PASSWORD,
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body.path).toBe('/api/auth/login')
+    expect(body.code).toBe('OK')
+    expect(body.message).toBe('OK')
+    expect(() => loginResponseSchema.parse(body)).not.toThrow()
+  })
+
+  it('answers unknown user and wrong password with identical bodies (modulo date)', async () => {
+    const { app } = await buildApp()
+
+    const unknownResponse = await post(app, '/api/auth/login', {
+      username: 'ghost',
+      password: PASSWORD,
+    })
+    const wrongResponse = await post(app, '/api/auth/login', {
+      username: 'admin',
+      password: 'totally-wrong-password',
+    })
+
+    const unknownBody = await unknownResponse.json()
+    const wrongBody = await wrongResponse.json()
+
+    expect(unknownResponse.status).toBe(401)
+    expect(wrongResponse.status).toBe(401)
+    const { date: _u, ...unknownRest } = unknownBody
+    const { date: _w, ...wrongRest } = wrongBody
+    expect(unknownRest).toEqual(wrongRest)
+    expect(unknownBody.code).toBe('AUTH_INVALID_CREDENTIALS')
+    expect(unknownBody.errors.message).toEqual(['Invalid username or password'])
+  })
+
+  it('maps a disabled account to 403 and validation issues to 400', async () => {
+    const { app, userRepository, admin } = await buildApp()
+    userRepository.setStatus(admin.id, 'disabled')
+
+    const disabledResponse = await post(app, '/api/auth/login', {
+      username: 'admin',
+      password: PASSWORD,
+    })
+    expect(disabledResponse.status).toBe(403)
+    const disabledBody = await disabledResponse.json()
+    expect(disabledBody.code).toBe('AUTH_ACCOUNT_DISABLED')
+
+    const invalidResponse = await post(app, '/api/auth/login', {
+      username: 'Bad Name',
+      password: 'short',
+    })
+    expect(invalidResponse.status).toBe(400)
+    const invalidBody = await invalidResponse.json()
+    expect(invalidBody.code).toBe('VALIDATION_ERROR')
+    expect(Array.isArray(invalidBody.errors.message)).toBe(true)
+    expect(invalidBody.errors.message.length).toBeGreaterThanOrEqual(2)
+  })
+})
+
+describe('POST /api/auth/refresh (route)', () => {
+  it('rotates and then kills the whole session on replay', async () => {
+    const { app } = await buildApp()
+    const loginResponse = await post(app, '/api/auth/login', {
+      username: 'admin',
+      password: PASSWORD,
+    })
+    const loginBody = await loginResponse.json()
+
+    const refreshResponse = await post(app, '/api/auth/refresh', {
+      refreshToken: loginBody.data.refreshToken,
+    })
+    expect(refreshResponse.status).toBe(200)
+    const refreshBody = await refreshResponse.json()
+    expect(refreshBody.data.refreshToken).not.toBe(loginBody.data.refreshToken)
+
+    const replayResponse = await post(app, '/api/auth/refresh', {
+      refreshToken: loginBody.data.refreshToken,
+    })
+    expect(replayResponse.status).toBe(401)
+    expect((await replayResponse.json()).code).toBe('AUTH_INVALID_REFRESH_TOKEN')
+
+    const followUpResponse = await post(app, '/api/auth/refresh', {
+      refreshToken: refreshBody.data.refreshToken,
+    })
+    expect(followUpResponse.status).toBe(401)
+  })
+
+  it('rejects a malformed refresh token with 400 VALIDATION_ERROR', async () => {
+    const { app } = await buildApp()
+    const response = await post(app, '/api/auth/refresh', { refreshToken: 'too-short' })
+    expect(response.status).toBe(400)
+    expect((await response.json()).code).toBe('VALIDATION_ERROR')
+  })
+})
+
+describe('POST /api/auth/logout (route)', () => {
+  it('requires authentication and returns a bare success envelope', async () => {
+    const { app } = await buildApp()
+
+    const loginResponse = await post(app, '/api/auth/login', {
+      username: 'admin',
+      password: PASSWORD,
+    })
+    const { accessToken, refreshToken } = (await loginResponse.json()).data
+
+    const unauthenticated = await post(app, '/api/auth/logout', { refreshToken })
+    expect(unauthenticated.status).toBe(401)
+    expect((await unauthenticated.json()).code).toBe('UNAUTHORIZED')
+
+    const logoutResponse = await post(app, '/api/auth/logout', { refreshToken }, accessToken)
+    expect(logoutResponse.status).toBe(200)
+    const logoutBody = await logoutResponse.json()
+    expect(logoutBody.code).toBe('OK')
+    expect('data' in logoutBody).toBe(false)
+
+    const refreshAfterLogout = await post(app, '/api/auth/refresh', { refreshToken })
+    expect(refreshAfterLogout.status).toBe(401)
+  })
+})
+
+describe('GET /api/auth/me (route)', () => {
+  it('returns the current user for a valid token', async () => {
+    const { app, admin } = await buildApp()
+    const token = await signAccessToken({ sub: admin.id, role: 'admin' })
+
+    const response = await app.request('/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body.data.id).toBe(admin.id)
+    expect(() => meResponseSchema.parse(body)).not.toThrow()
+  })
+
+  it('maps an unresolvable sub to 401 and a disabled account to 403', async () => {
+    const { app, userRepository, admin } = await buildApp()
+
+    const ghostToken = await signAccessToken({ sub: 'missing-user', role: 'admin' })
+    const ghostResponse = await app.request('/api/auth/me', {
+      headers: { Authorization: `Bearer ${ghostToken}` },
+    })
+    expect(ghostResponse.status).toBe(401)
+    expect((await ghostResponse.json()).code).toBe('UNAUTHORIZED')
+
+    userRepository.setStatus(admin.id, 'disabled')
+    const disabledToken = await signAccessToken({ sub: admin.id, role: 'admin' })
+    const disabledResponse = await app.request('/api/auth/me', {
+      headers: { Authorization: `Bearer ${disabledToken}` },
+    })
+    expect(disabledResponse.status).toBe(403)
+    expect((await disabledResponse.json()).code).toBe('AUTH_ACCOUNT_DISABLED')
+  })
+})
+
+describe('OpenAPI integration', () => {
+  it('registers the bearerAuth scheme and per-route security', async () => {
+    const { app } = await buildApp()
+    const response = await app.request('/openapi.json')
+    const doc = await response.json()
+
+    expect(doc.components.securitySchemes.bearerAuth).toEqual({
+      type: 'http',
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+    })
+    expect(doc.paths['/api/auth/me'].get.security).toEqual([{ bearerAuth: [] }])
+    expect(doc.paths['/api/auth/login'].post.security).toEqual([])
+    expect(doc.paths['/health'].get.security).toEqual([])
+  })
+})

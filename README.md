@@ -1,6 +1,6 @@
 # Hono Agent Backend
 
-REST backend baseline for future web and AI/Agent-facing capabilities. It currently provides only shared engineering infrastructure; it does not connect to PostgreSQL or include authentication, business, or AI features.
+REST backend baseline for a ticket system backend (see `spec/`). It currently provides only shared engineering infrastructure; it does not connect to PostgreSQL or include authentication or business features.
 
 ## Requirements
 

@@ -40,6 +40,14 @@ The project requires Node.js 22+ and pnpm. Run commands from the repository root
 - Run the smallest relevant check while iterating; before handoff, run formatting, linting, type checking, tests, and build.
 - Do not edit generated `dist/` output by hand; regenerate it with `pnpm run build`.
 
+## Specification Organization
+
+- Top-level specs use numeric prefixes (`0001-`, `0002-`, ...) and record project-level decisions, baselines, and roadmaps. The active roadmap is `spec/0002-ticket-system-roadmap.md`; future module development plans are added to this roadmap instead of creating new top-level specs.
+- Related modules are grouped into one batch folder named `spec/module-<batch>/` (for example `spec/module-auth-users/`, `spec/module-tickets/`). Prefer adding a module to an existing related folder before creating a new one; create a new folder only when a planned batch is initiated.
+- Spec files inside module folders are named after the function with no numeric prefix (for example `login.md`, `tickets-crud.md`); add each file when its specification is drafted.
+- Project-wide common rules live in `spec/common/`; put cross-module conventions there instead of duplicating them in module specs.
+- Module-level specs describe colocated unit tests only and contain no E2E-related content. E2E test coverage is specified in its own dedicated spec file, separate from module specs.
+
 ## Architecture
 
 - `src/main.ts` composes the Hono application; `src/server.ts` owns Node.js startup and port fallback.
