@@ -1,0 +1,3 @@
+# Normalize all text files to LF line endings so Oxfmt sees consistent input
+# regardless of each developer's core.autocrlf setting.
+* text eol=lf
