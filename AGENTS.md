@@ -61,6 +61,7 @@ The project requires Node.js 22+ and pnpm. Run commands from the repository root
 
 - Keep unit tests beside their source as `*.spec.ts` files.
 - Keep application E2E tests in `test/` as `*.e2e.spec.ts` files.
+- Do not write E2E tests while implementing modules; module work ships with colocated unit tests only.
 - Every new behavior or bug fix requires focused test coverage.
 - Test both success and failure paths, including relevant boundary cases.
 - Keep tests hermetic: do not require a live database, network access, real credentials, or a manually started server.
