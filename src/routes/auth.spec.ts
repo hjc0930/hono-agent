@@ -5,6 +5,7 @@ import { hashPassword } from '../lib/password.ts'
 import { MemoryRefreshTokenRepository, MemoryUserRepository } from '../repositories/fakes.ts'
 import { createApp } from '../main.ts'
 import { loginResponseSchema, meResponseSchema } from '../schemas/auth.ts'
+import { createMemoryLoginAttemptTracker } from '../services/login-protection.ts'
 
 const PASSWORD = 'correct-horse-battery'
 
@@ -207,5 +208,65 @@ describe('OpenAPI integration', () => {
     expect(doc.paths['/api/auth/me'].get.security).toEqual([{ bearerAuth: [] }])
     expect(doc.paths['/api/auth/login'].post.security).toEqual([])
     expect(doc.paths['/health'].get.security).toEqual([])
+  })
+})
+
+describe('POST /api/auth/login — login protection', () => {
+  const buildProtectedApp = async (
+    trackerOptions: Parameters<typeof createMemoryLoginAttemptTracker>[0],
+  ) => {
+    const userRepository = new MemoryUserRepository()
+    const refreshTokenRepository = new MemoryRefreshTokenRepository()
+    const tracker = createMemoryLoginAttemptTracker(trackerOptions)
+    const app = createApp({ userRepository, refreshTokenRepository, loginAttemptTracker: tracker })
+    await userRepository.insert({
+      username: 'admin',
+      passwordHash: await hashPassword(PASSWORD),
+      displayName: null,
+      role: 'admin',
+      status: 'active',
+    })
+    return { app }
+  }
+
+  it('locks an account after repeated credential failures', async () => {
+    const { app } = await buildProtectedApp({ maxFailures: 2, ipFailureLimit: 1000 })
+
+    await post(app, '/api/auth/login', { username: 'admin', password: 'wrong-password-1' })
+    await post(app, '/api/auth/login', { username: 'admin', password: 'wrong-password-2' })
+
+    const locked = await post(app, '/api/auth/login', { username: 'admin', password: PASSWORD })
+    expect(locked.status).toBe(423)
+    expect((await locked.json()).code).toBe('AUTH_ACCOUNT_LOCKED')
+  })
+
+  it('rate limits by IP across different usernames', async () => {
+    const { app } = await buildProtectedApp({ maxFailures: 100, ipFailureLimit: 2 })
+
+    await post(app, '/api/auth/login', { username: 'ghost1', password: 'wrong-password-1' })
+    await post(app, '/api/auth/login', { username: 'ghost2', password: 'wrong-password-2' })
+
+    const blocked = await post(app, '/api/auth/login', {
+      username: 'ghost3',
+      password: 'wrong-password-3',
+    })
+    expect(blocked.status).toBe(429)
+    expect((await blocked.json()).code).toBe('AUTH_RATE_LIMITED')
+  })
+
+  it('resets the failure streak on a successful login', async () => {
+    const { app } = await buildProtectedApp({ maxFailures: 2, ipFailureLimit: 1000 })
+
+    await post(app, '/api/auth/login', { username: 'admin', password: 'wrong-password-1' })
+    const success = await post(app, '/api/auth/login', { username: 'admin', password: PASSWORD })
+    expect(success.status).toBe(200)
+
+    // One failure after a success must not lock the account.
+    const failure = await post(app, '/api/auth/login', {
+      username: 'admin',
+      password: 'wrong-password-2',
+    })
+    expect(failure.status).toBe(401)
+    expect((await failure.json()).code).toBe('AUTH_INVALID_CREDENTIALS')
   })
 })

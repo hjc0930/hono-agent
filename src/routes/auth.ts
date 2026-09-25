@@ -5,8 +5,13 @@ import { DrizzleRefreshTokenRepository } from '../repositories/refresh-token-rep
 import type { RefreshTokenRepository } from '../repositories/refresh-token-repository.ts'
 import { DrizzleUserRepository } from '../repositories/user-repository.ts'
 import type { UserRepository } from '../repositories/user-repository.ts'
+import { AppError } from '../lib/errors.ts'
 import { successEnvelope } from '../lib/response.ts'
 import { createAuthService } from '../services/auth.ts'
+import {
+  createMemoryLoginAttemptTracker,
+  type LoginAttemptTracker,
+} from '../services/login-protection.ts'
 import type { AppVariables } from '../types.ts'
 import {
   authFailureResponseSchema,
@@ -21,6 +26,7 @@ import {
 export type AuthRouteDependencies = {
   userRepository?: UserRepository
   refreshTokenRepository?: RefreshTokenRepository
+  loginAttemptTracker?: LoginAttemptTracker
 }
 
 const loginRoute = createRoute({
@@ -49,6 +55,14 @@ const loginRoute = createRoute({
     403: {
       content: { 'application/json': { schema: authFailureResponseSchema } },
       description: 'Account is disabled',
+    },
+    423: {
+      content: { 'application/json': { schema: authFailureResponseSchema } },
+      description: 'Account is locked',
+    },
+    429: {
+      content: { 'application/json': { schema: authFailureResponseSchema } },
+      description: 'Rate limited',
     },
   },
 })
@@ -132,6 +146,12 @@ const meRoute = createRoute({
 
 const requestPath = (context: { req: { url: string } }): string => new URL(context.req.url).pathname
 
+const clientIp = (context: { req: { header: (name: string) => string | undefined } }): string => {
+  const forwarded = context.req.header('x-forwarded-for')
+  const first = forwarded?.split(',')[0]?.trim()
+  return first && first.length > 0 ? first : 'local'
+}
+
 export const registerAuthRoutes = (
   app: OpenAPIHono<{ Variables: AppVariables }>,
   dependencies: AuthRouteDependencies = {},
@@ -141,11 +161,23 @@ export const registerAuthRoutes = (
     refreshTokenRepository:
       dependencies.refreshTokenRepository ?? new DrizzleRefreshTokenRepository(),
   })
+  const loginAttemptTracker = dependencies.loginAttemptTracker ?? createMemoryLoginAttemptTracker()
 
   app.openapi(loginRoute, async (context) => {
     const body = context.req.valid('json')
-    const result = await authService.login(body)
-    return context.json(successEnvelope({ path: requestPath(context), data: result }), 200)
+    const ip = clientIp(context)
+    loginAttemptTracker.assertAllowed(ip, body.username)
+
+    try {
+      const result = await authService.login(body)
+      loginAttemptTracker.recordSuccess(body.username)
+      return context.json(successEnvelope({ path: requestPath(context), data: result }), 200)
+    } catch (error) {
+      if (error instanceof AppError && error.code === 'AUTH_INVALID_CREDENTIALS') {
+        loginAttemptTracker.recordFailure(ip, body.username)
+      }
+      throw error
+    }
   })
 
   app.openapi(refreshRoute, async (context) => {

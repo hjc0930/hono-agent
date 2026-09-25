@@ -9,6 +9,10 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32),
   AUTH_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(900),
   AUTH_REFRESH_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(604_800),
+  AUTH_MAX_LOGIN_FAILURES: z.coerce.number().int().min(1).default(5),
+  AUTH_LOCKOUT_SECONDS: z.coerce.number().int().positive().default(900),
+  AUTH_IP_FAILURE_LIMIT: z.coerce.number().int().min(1).default(20),
+  AUTH_IP_WINDOW_SECONDS: z.coerce.number().int().positive().default(900),
   SEED_ADMIN_USERNAME: z.string().optional(),
   SEED_ADMIN_PASSWORD: z.string().optional(),
 })

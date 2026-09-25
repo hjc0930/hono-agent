@@ -1,11 +1,19 @@
 import { env } from '../config/env.ts'
 
+export type PaginationMeta = {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
 export type SuccessEnvelope<T> = {
   path: string
   date: string
   message: string
   code: 'OK'
   data?: T | null
+  meta?: PaginationMeta
 }
 
 export type FailureErrorDetails = {
@@ -48,6 +56,7 @@ export const successEnvelope = <T>(options: {
   path: string
   data?: T | null
   message?: string
+  meta?: PaginationMeta
 }): SuccessEnvelope<T> => {
   const envelope: SuccessEnvelope<T> = {
     path: options.path,
@@ -56,8 +65,34 @@ export const successEnvelope = <T>(options: {
     code: 'OK',
   }
   if (options.data !== undefined) envelope.data = options.data
+  if (options.meta !== undefined) envelope.meta = options.meta
   return envelope
 }
+
+export type PaginatedEnvelope<T> = {
+  path: string
+  date: string
+  message: string
+  code: 'OK'
+  data: T[]
+  meta: PaginationMeta
+}
+
+// List responses carry a required array `data` plus pagination `meta`, so they use
+// this narrower builder instead of `successEnvelope`.
+export const paginatedEnvelope = <T>(options: {
+  path: string
+  data: T[]
+  meta: PaginationMeta
+  message?: string
+}): PaginatedEnvelope<T> => ({
+  path: options.path,
+  date: nowIso(),
+  message: options.message ?? 'OK',
+  code: 'OK',
+  data: options.data,
+  meta: options.meta,
+})
 
 export const failureEnvelope = (options: {
   path: string

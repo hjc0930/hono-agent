@@ -5,7 +5,13 @@ import type {
   RefreshTokenRecord,
   RefreshTokenRepository,
 } from './refresh-token-repository.ts'
-import type { NewUser, UserRecord, UserRepository } from './user-repository.ts'
+import type {
+  NewUser,
+  UserListFilter,
+  UserPatch,
+  UserRecord,
+  UserRepository,
+} from './user-repository.ts'
 
 export class MemoryUserRepository implements UserRepository {
   readonly #users = new Map<string, UserRecord>()
@@ -38,6 +44,32 @@ export class MemoryUserRepository implements UserRepository {
     }
     this.#users.set(record.id, record)
     return record
+  }
+
+  async list(filter: UserListFilter): Promise<{ items: UserRecord[]; total: number }> {
+    const keyword = filter.keyword?.toLowerCase()
+    const matches = [...this.#users.values()].filter((user) => {
+      if (filter.role !== undefined && user.role !== filter.role) return false
+      if (filter.status !== undefined && user.status !== filter.status) return false
+      if (keyword) {
+        const username = user.username.toLowerCase()
+        const displayName = user.displayName?.toLowerCase() ?? ''
+        if (!username.includes(keyword) && !displayName.includes(keyword)) return false
+      }
+      return true
+    })
+
+    matches.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    const offset = (filter.page - 1) * filter.pageSize
+    return { items: matches.slice(offset, offset + filter.pageSize), total: matches.length }
+  }
+
+  async update(id: string, patch: UserPatch): Promise<UserRecord | null> {
+    const user = this.#users.get(id)
+    if (!user) return null
+    const updated: UserRecord = { ...user, ...patch, updatedAt: new Date() }
+    this.#users.set(id, updated)
+    return updated
   }
 
   /** Test-only helper for mutating a stored user (e.g. toggling status mid-test). */
