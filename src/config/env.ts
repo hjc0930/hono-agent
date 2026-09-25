@@ -1,5 +1,15 @@
 import { z } from 'zod'
 
+// Load the local .env file for development and production runs. Tests inject their
+// own environment in vitest.setup.ts and must never read a developer's local .env.
+if (process.env.NODE_ENV !== 'test') {
+  try {
+    process.loadEnvFile()
+  } catch {
+    // Missing .env is fine; the process inherits the real environment instead.
+  }
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
