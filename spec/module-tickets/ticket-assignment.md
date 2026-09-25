@@ -24,13 +24,13 @@ Assigning a ticket hands it to a handler (an agent). This spec defines admin-dri
 
 ## Decisions
 
-| Topic | Decision | Rationale |
-| ----- | -------- | --------- |
-| Assign access | `admin` only | The roadmap scopes manual assignment to admin |
-| Handler eligibility | `role` is `agent` or `admin`, and `status` is `active` | Never assign to a requester or a disabled account |
-| Status coupling | Assigning a `pending` ticket transitions it to `in_progress`; otherwise the status is unchanged | Keeps assignment and the state machine consistent |
-| Reassignment | Allowed while `in_progress` (changes `handler_id`) | Handoffs happen; terminal states reject it via the state machine |
-| Endpoint | `POST /api/tickets/:id/assign` | Explicit action, distinct from generic update |
+| Topic               | Decision                                                                                        | Rationale                                                        |
+| ------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Assign access       | `admin` only                                                                                    | The roadmap scopes manual assignment to admin                    |
+| Handler eligibility | `role` is `agent` or `admin`, and `status` is `active`                                          | Never assign to a requester or a disabled account                |
+| Status coupling     | Assigning a `pending` ticket transitions it to `in_progress`; otherwise the status is unchanged | Keeps assignment and the state machine consistent                |
+| Reassignment        | Allowed while `in_progress` (changes `handler_id`)                                              | Handoffs happen; terminal states reject it via the state machine |
+| Endpoint            | `POST /api/tickets/:id/assign`                                                                  | Explicit action, distinct from generic update                    |
 
 ## API contract
 
@@ -40,9 +40,9 @@ Guarded by `requireAuth` then `requireRole('admin')`.
 
 Request body:
 
-| Field       | Type   | Validation                                        |
-| ----------- | ------ | ------------------------------------------------- |
-| `handlerId` | string | uuid of an active agent/admin user                |
+| Field       | Type   | Validation                         |
+| ----------- | ------ | ---------------------------------- |
+| `handlerId` | string | uuid of an active agent/admin user |
 
 Success `200` — `data`: the updated ticket (with `handlerId` set and, if it was `pending`, `status` now `in_progress`).
 
@@ -54,20 +54,20 @@ No new tables. Uses `tickets.handler_id` (from `tickets-crud.md`) and `ticket_ev
 
 ## Error codes
 
-| Code                  | HTTP | Used by                    |
-| --------------------- | ---- | -------------------------- |
-| `INVALID_HANDLER`     | 400  | assign (bad `handlerId`)   |
+| Code              | HTTP | Used by                  |
+| ----------------- | ---- | ------------------------ |
+| `INVALID_HANDLER` | 400  | assign (bad `handlerId`) |
 
 `INVALID_STATE_TRANSITION` is reused for terminal-state assignments.
 
 ## Architecture mapping
 
-| Path | Responsibility |
-| ---- | -------------- |
-| `src/routes/tickets.ts` (+ `.spec.ts`) | `assign` route + OpenAPI |
-| `src/schemas/ticket.ts` | assign request/response schemas |
-| `src/services/ticket-assignment.ts` (+ `.spec.ts`) | Handler validation + status coupling |
-| `src/repositories/ticket-repository.ts` | `assign` method (handler + optional status change) |
+| Path                                               | Responsibility                                     |
+| -------------------------------------------------- | -------------------------------------------------- |
+| `src/routes/tickets.ts` (+ `.spec.ts`)             | `assign` route + OpenAPI                           |
+| `src/schemas/ticket.ts`                            | assign request/response schemas                    |
+| `src/services/ticket-assignment.ts` (+ `.spec.ts`) | Handler validation + status coupling               |
+| `src/repositories/ticket-repository.ts`            | `assign` method (handler + optional status change) |
 
 ## Testing strategy
 

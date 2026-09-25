@@ -26,15 +26,15 @@ Tickets are organized by category (for example "账号问题", "设备故障", "
 
 ## Decisions
 
-| Topic | Decision | Rationale |
-| ----- | -------- | --------- |
-| Deletion | None; `PATCH` sets `enabled: false` | Future tickets reference `category_id`, so the row must persist |
-| Write access | `admin` only (create/update) | Categories are a small admin-maintained vocabulary |
-| Read access | Any authenticated role (`requireAuth`) | Agents and requesters need the list to file/route tickets |
-| Name uniqueness | `name` is unique (case-sensitive, trimmed) | Prevents two categories that are textually identical |
-| Name mutability | `name` is mutable via `PATCH` | Renaming a category should not require delete + recreate |
-| Default sort | `created_at` ascending | Stable, matches `user-management` convention |
-| Route prefix | `/api/ticket-categories` | Keeps the ticket domain explicit |
+| Topic           | Decision                                   | Rationale                                                       |
+| --------------- | ------------------------------------------ | --------------------------------------------------------------- |
+| Deletion        | None; `PATCH` sets `enabled: false`        | Future tickets reference `category_id`, so the row must persist |
+| Write access    | `admin` only (create/update)               | Categories are a small admin-maintained vocabulary              |
+| Read access     | Any authenticated role (`requireAuth`)     | Agents and requesters need the list to file/route tickets       |
+| Name uniqueness | `name` is unique (case-sensitive, trimmed) | Prevents two categories that are textually identical            |
+| Name mutability | `name` is mutable via `PATCH`              | Renaming a category should not require delete + recreate        |
+| Default sort    | `created_at` ascending                     | Stable, matches `user-management` convention                    |
+| Route prefix    | `/api/ticket-categories`                   | Keeps the ticket domain explicit                                |
 
 ## API contract
 
@@ -55,10 +55,10 @@ The public category object:
 
 Create a category. Request body:
 
-| Field         | Type   | Validation                       |
-| ------------- | ------ | -------------------------------- |
+| Field         | Type   | Validation                           |
+| ------------- | ------ | ------------------------------------ |
 | `name`        | string | `min(1)`, `max(64)`, trimmed, unique |
-| `description` | string | optional, `max(255)`, trimmed    |
+| `description` | string | optional, `max(255)`, trimmed        |
 
 Success `200` — `data`: the created category (`enabled` defaults to `true`).
 
@@ -78,11 +78,11 @@ Read one category. Success `200` — `data`: category. Errors: `404 CATEGORY_NOT
 
 Update `name`, `description`, or `enabled` (any subset). Request body:
 
-| Field         | Type    | Validation                    |
-| ------------- | ------- | ----------------------------- |
+| Field         | Type    | Validation                                     |
+| ------------- | ------- | ---------------------------------------------- |
 | `name`        | string  | optional, `min(1)`, `max(64)`, trimmed, unique |
-| `description` | string  | optional, `max(255)`, trimmed, nullable |
-| `enabled`     | boolean | optional                      |
+| `description` | string  | optional, `max(255)`, trimmed, nullable        |
+| `enabled`     | boolean | optional                                       |
 
 At least one field must be present. Success `200` — `data`: updated category. Errors: `400 VALIDATION_ERROR`; `404 CATEGORY_NOT_FOUND`; `409 CATEGORY_NAME_TAKEN`.
 
@@ -90,34 +90,34 @@ At least one field must be present. Success `200` — `data`: updated category. 
 
 ### `ticket_categories`
 
-| Column        | Type        | Null | Default               | Constraints / notes            |
-| ------------- | ----------- | ---- | --------------------- | ------------------------------ |
-| `id`          | uuid        | no   | `gen_random_uuid()`   | PK                             |
-| `name`        | text        | no   | —                     | unique index                   |
-| `description` | text        | yes  | —                     |                                |
-| `enabled`     | boolean     | no   | `true`                |                                |
-| `created_at`  | timestamptz | no   | `now()`               |                                |
-| `updated_at`  | timestamptz | no   | `now()`               | refreshed on update            |
+| Column        | Type        | Null | Default             | Constraints / notes |
+| ------------- | ----------- | ---- | ------------------- | ------------------- |
+| `id`          | uuid        | no   | `gen_random_uuid()` | PK                  |
+| `name`        | text        | no   | —                   | unique index        |
+| `description` | text        | yes  | —                   |                     |
+| `enabled`     | boolean     | no   | `true`              |                     |
+| `created_at`  | timestamptz | no   | `now()`             |                     |
+| `updated_at`  | timestamptz | no   | `now()`             | refreshed on update |
 
 This is the second migration (after the Phase 1 `users`/`refresh_tokens` tables).
 
 ## Error codes
 
-| Code                  | HTTP | Used by                    |
-| --------------------- | ---- | -------------------------- |
-| `CATEGORY_NOT_FOUND`  | 404  | get, update                |
-| `CATEGORY_NAME_TAKEN` | 409  | create, update (name)      |
+| Code                  | HTTP | Used by               |
+| --------------------- | ---- | --------------------- |
+| `CATEGORY_NOT_FOUND`  | 404  | get, update           |
+| `CATEGORY_NAME_TAKEN` | 409  | create, update (name) |
 
 ## Architecture mapping
 
-| Path | Responsibility |
-| ---- | -------------- |
+| Path                                             | Responsibility                                                    |
+| ------------------------------------------------ | ----------------------------------------------------------------- |
 | `src/routes/ticket-categories.ts` (+ `.spec.ts`) | Routes + OpenAPI, guarded by `requireAuth`/`requireRole('admin')` |
-| `src/schemas/ticket-category.ts` | Zod request/response schemas |
-| `src/services/ticket-category.ts` (+ `.spec.ts`) | Business logic: uniqueness check, updates |
-| `src/repositories/ticket-category-repository.ts` | Drizzle implementation + interface |
-| `src/repositories/fakes.ts` | In-memory fake for hermetic tests |
-| `src/db/schema.ts` | `ticket_categories` table |
+| `src/schemas/ticket-category.ts`                 | Zod request/response schemas                                      |
+| `src/services/ticket-category.ts` (+ `.spec.ts`) | Business logic: uniqueness check, updates                         |
+| `src/repositories/ticket-category-repository.ts` | Drizzle implementation + interface                                |
+| `src/repositories/fakes.ts`                      | In-memory fake for hermetic tests                                 |
+| `src/db/schema.ts`                               | `ticket_categories` table                                         |
 
 ## Testing strategy
 

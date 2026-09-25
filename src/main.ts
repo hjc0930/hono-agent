@@ -7,11 +7,19 @@ import { requestContext } from './middleware/request-context.ts'
 import { apiCors, securityHeaders } from './middleware/security.ts'
 import { registerAuthRoutes, type AuthRouteDependencies } from './routes/auth.ts'
 import { registerUserRoutes, type UserRouteDependencies } from './routes/users.ts'
+import {
+  registerTicketCategoryRoutes,
+  type TicketCategoryRouteDependencies,
+} from './routes/ticket-categories.ts'
+import { registerTicketRoutes, type TicketRouteDependencies } from './routes/tickets.ts'
 import { healthRoute } from './routes/health.ts'
 import { registerOpenApi } from './openapi.ts'
 import type { AppVariables } from './types.ts'
 
-export type AppDependencies = AuthRouteDependencies & UserRouteDependencies
+export type AppDependencies = AuthRouteDependencies &
+  UserRouteDependencies &
+  TicketCategoryRouteDependencies &
+  TicketRouteDependencies
 
 export const createApp = (dependencies: AppDependencies = {}) => {
   // Route validation failures must surface as the common failure envelope, so the
@@ -43,6 +51,8 @@ export const createApp = (dependencies: AppDependencies = {}) => {
   )
   registerAuthRoutes(app, dependencies)
   registerUserRoutes(app, dependencies)
+  registerTicketCategoryRoutes(app, dependencies)
+  registerTicketRoutes(app, dependencies)
   registerOpenApi(app)
   app.notFound(() => {
     throw notFoundError()

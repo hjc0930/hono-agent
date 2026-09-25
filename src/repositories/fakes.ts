@@ -6,6 +6,30 @@ import type {
   RefreshTokenRepository,
 } from './refresh-token-repository.ts'
 import type {
+  NewTicketCategory,
+  TicketCategoryListFilter,
+  TicketCategoryPatch,
+  TicketCategoryRecord,
+  TicketCategoryRepository,
+} from './ticket-category-repository.ts'
+import type {
+  NewTicketComment,
+  TicketCommentRecord,
+  TicketCommentRepository,
+} from './ticket-comment-repository.ts'
+import type {
+  NewTicketEvent,
+  TicketEventRecord,
+  TicketEventRepository,
+} from './ticket-event-repository.ts'
+import type {
+  NewTicket,
+  TicketListFilter,
+  TicketPatch,
+  TicketRecord,
+  TicketRepository,
+} from './ticket-repository.ts'
+import type {
   NewUser,
   UserListFilter,
   UserPatch,
@@ -127,10 +151,10 @@ export class MemoryRefreshTokenRepository implements RefreshTokenRepository {
   }
 }
 
-type UserOverrides = Partial<Omit<UserRecord, 'id' | 'createdAt' | 'updatedAt'>>
+type UserOverrides = Partial<Omit<UserRecord, 'createdAt' | 'updatedAt'>>
 
 export const makeUser = (overrides: UserOverrides = {}): UserRecord => ({
-  id: randomUUID(),
+  id: overrides.id ?? randomUUID(),
   username: overrides.username ?? 'alice',
   passwordHash: overrides.passwordHash ?? 'scrypt$16384$8$1$c2FsdA==$aGFzaA==',
   displayName: overrides.displayName ?? null,
@@ -140,13 +164,208 @@ export const makeUser = (overrides: UserOverrides = {}): UserRecord => ({
   updatedAt: new Date(),
 })
 
-type RefreshTokenOverrides = Partial<Omit<RefreshTokenRecord, 'id' | 'createdAt'>>
+type RefreshTokenOverrides = Partial<Omit<RefreshTokenRecord, 'createdAt'>>
 
 export const makeRefreshToken = (overrides: RefreshTokenOverrides = {}): RefreshTokenRecord => ({
-  id: randomUUID(),
+  id: overrides.id ?? randomUUID(),
   userId: overrides.userId ?? randomUUID(),
   tokenHash: overrides.tokenHash ?? 'a'.repeat(64),
   expiresAt: overrides.expiresAt ?? new Date(Date.now() + 60 * 60 * 1000),
   revokedAt: overrides.revokedAt ?? null,
+  createdAt: new Date(),
+})
+
+export class MemoryTicketCategoryRepository implements TicketCategoryRepository {
+  readonly #categories = new Map<string, TicketCategoryRecord>()
+
+  constructor(seed: TicketCategoryRecord[] = []) {
+    for (const category of seed) this.#categories.set(category.id, category)
+  }
+
+  async list(
+    filter: TicketCategoryListFilter,
+  ): Promise<{ items: TicketCategoryRecord[]; total: number }> {
+    const keyword = filter.keyword?.toLowerCase()
+    const matches = [...this.#categories.values()].filter((category) => {
+      if (filter.enabled !== undefined && category.enabled !== filter.enabled) return false
+      if (keyword) {
+        const name = category.name.toLowerCase()
+        const description = category.description?.toLowerCase() ?? ''
+        if (!name.includes(keyword) && !description.includes(keyword)) return false
+      }
+      return true
+    })
+    matches.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    const offset = (filter.page - 1) * filter.pageSize
+    return { items: matches.slice(offset, offset + filter.pageSize), total: matches.length }
+  }
+
+  async findById(id: string): Promise<TicketCategoryRecord | null> {
+    return this.#categories.get(id) ?? null
+  }
+
+  async findByName(name: string): Promise<TicketCategoryRecord | null> {
+    for (const category of this.#categories.values()) {
+      if (category.name === name) return category
+    }
+    return null
+  }
+
+  async insert(category: NewTicketCategory): Promise<TicketCategoryRecord> {
+    const record: TicketCategoryRecord = {
+      id: randomUUID(),
+      ...category,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+    this.#categories.set(record.id, record)
+    return record
+  }
+
+  async update(id: string, patch: TicketCategoryPatch): Promise<TicketCategoryRecord | null> {
+    const category = this.#categories.get(id)
+    if (!category) return null
+    const updated: TicketCategoryRecord = { ...category, ...patch, updatedAt: new Date() }
+    this.#categories.set(id, updated)
+    return updated
+  }
+}
+
+export class MemoryTicketRepository implements TicketRepository {
+  readonly #tickets = new Map<string, TicketRecord>()
+
+  constructor(seed: TicketRecord[] = []) {
+    for (const ticket of seed) this.#tickets.set(ticket.id, ticket)
+  }
+
+  async list(filter: TicketListFilter): Promise<{ items: TicketRecord[]; total: number }> {
+    const keyword = filter.keyword?.toLowerCase()
+    const matches = [...this.#tickets.values()].filter((ticket) => {
+      if (filter.status !== undefined && ticket.status !== filter.status) return false
+      if (filter.priority !== undefined && ticket.priority !== filter.priority) return false
+      if (filter.categoryId !== undefined && ticket.categoryId !== filter.categoryId) return false
+      if (filter.requesterId !== undefined && ticket.requesterId !== filter.requesterId)
+        return false
+      if (filter.handlerId !== undefined && ticket.handlerId !== filter.handlerId) return false
+      if (filter.createdFrom !== undefined && ticket.createdAt < filter.createdFrom) return false
+      if (filter.createdTo !== undefined && ticket.createdAt > filter.createdTo) return false
+      if (keyword) {
+        const title = ticket.title.toLowerCase()
+        const description = ticket.description.toLowerCase()
+        if (!title.includes(keyword) && !description.includes(keyword)) return false
+      }
+      return true
+    })
+    matches.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    const offset = (filter.page - 1) * filter.pageSize
+    return { items: matches.slice(offset, offset + filter.pageSize), total: matches.length }
+  }
+
+  async findById(id: string): Promise<TicketRecord | null> {
+    return this.#tickets.get(id) ?? null
+  }
+
+  async insert(ticket: NewTicket): Promise<TicketRecord> {
+    const record: TicketRecord = {
+      id: randomUUID(),
+      ...ticket,
+      resolvedAt: null,
+      closedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+    this.#tickets.set(record.id, record)
+    return record
+  }
+
+  async update(id: string, patch: TicketPatch): Promise<TicketRecord | null> {
+    const ticket = this.#tickets.get(id)
+    if (!ticket) return null
+    const updated: TicketRecord = { ...ticket, ...patch, updatedAt: new Date() }
+    this.#tickets.set(id, updated)
+    return updated
+  }
+}
+
+export class MemoryTicketEventRepository implements TicketEventRepository {
+  readonly #events: TicketEventRecord[]
+
+  constructor(seed: TicketEventRecord[] = []) {
+    this.#events = [...seed]
+  }
+
+  async insert(event: NewTicketEvent): Promise<TicketEventRecord> {
+    const record: TicketEventRecord = { id: randomUUID(), ...event, createdAt: new Date() }
+    this.#events.push(record)
+    return record
+  }
+
+  async listByTicket(ticketId: string): Promise<TicketEventRecord[]> {
+    return this.#events
+      .filter((event) => event.ticketId === ticketId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+  }
+}
+
+export class MemoryTicketCommentRepository implements TicketCommentRepository {
+  readonly #comments: TicketCommentRecord[]
+
+  constructor(seed: TicketCommentRecord[] = []) {
+    this.#comments = [...seed]
+  }
+
+  async insert(comment: NewTicketComment): Promise<TicketCommentRecord> {
+    const record: TicketCommentRecord = { id: randomUUID(), ...comment, createdAt: new Date() }
+    this.#comments.push(record)
+    return record
+  }
+
+  async listByTicket(ticketId: string): Promise<TicketCommentRecord[]> {
+    return this.#comments
+      .filter((comment) => comment.ticketId === ticketId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+  }
+}
+
+type TicketCategoryOverrides = Partial<Omit<TicketCategoryRecord, 'createdAt' | 'updatedAt'>>
+
+export const makeTicketCategory = (
+  overrides: TicketCategoryOverrides = {},
+): TicketCategoryRecord => ({
+  id: overrides.id ?? randomUUID(),
+  name: overrides.name ?? '账号问题',
+  description: overrides.description ?? null,
+  enabled: overrides.enabled ?? true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+})
+
+type TicketOverrides = Partial<
+  Omit<TicketRecord, 'resolvedAt' | 'closedAt' | 'createdAt' | 'updatedAt'>
+>
+
+export const makeTicket = (overrides: TicketOverrides = {}): TicketRecord => ({
+  id: overrides.id ?? randomUUID(),
+  title: overrides.title ?? '登录失败',
+  description: overrides.description ?? '用户无法登录',
+  categoryId: overrides.categoryId ?? randomUUID(),
+  priority: overrides.priority ?? 'medium',
+  status: overrides.status ?? 'pending',
+  requesterId: overrides.requesterId ?? randomUUID(),
+  handlerId: overrides.handlerId ?? null,
+  resolvedAt: null,
+  closedAt: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+})
+
+type TicketCommentOverrides = Partial<Omit<TicketCommentRecord, 'createdAt'>>
+
+export const makeTicketComment = (overrides: TicketCommentOverrides = {}): TicketCommentRecord => ({
+  id: overrides.id ?? randomUUID(),
+  ticketId: overrides.ticketId ?? randomUUID(),
+  authorId: overrides.authorId ?? randomUUID(),
+  body: overrides.body ?? '请提供更多信息',
+  kind: overrides.kind ?? 'public',
   createdAt: new Date(),
 })

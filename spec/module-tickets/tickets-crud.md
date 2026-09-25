@@ -26,16 +26,16 @@ This spec defines the core `tickets` entity: creation, paginated list with filte
 
 ## Decisions
 
-| Topic | Decision | Rationale |
-| ----- | -------- | --------- |
-| Priority | enum `low`/`medium`/`high`/`urgent`, default `medium` | Four tiers cover the roadmap's needs without over-configuring |
-| Status | enum `pending`/`in_progress`/`resolved`/`closed`/`cancelled`, default `pending` | The state machine from `ticket-state-machine.md` |
-| Create access | Any authenticated role | Agents and admins may file tickets on behalf of a customer |
-| Requester on create | Defaults to the caller; agents/admins may specify another `requesterId` | Lets an agent file a ticket for a customer |
-| Visibility | `user` sees only `requester_id = self`; `agent`/`admin` see all | Core tenant isolation without a separate tenancy table |
-| List sort | `created_at` descending | Newest first, the usual ticket queue view |
-| Description | Required, `max(5000)`; `title` `max(200)` | Bounds for a plain-text MVP |
-| Category on create | Must reference an existing, enabled category | Prevents orphaned or retired categories on new work |
+| Topic               | Decision                                                                        | Rationale                                                     |
+| ------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Priority            | enum `low`/`medium`/`high`/`urgent`, default `medium`                           | Four tiers cover the roadmap's needs without over-configuring |
+| Status              | enum `pending`/`in_progress`/`resolved`/`closed`/`cancelled`, default `pending` | The state machine from `ticket-state-machine.md`              |
+| Create access       | Any authenticated role                                                          | Agents and admins may file tickets on behalf of a customer    |
+| Requester on create | Defaults to the caller; agents/admins may specify another `requesterId`         | Lets an agent file a ticket for a customer                    |
+| Visibility          | `user` sees only `requester_id = self`; `agent`/`admin` see all                 | Core tenant isolation without a separate tenancy table        |
+| List sort           | `created_at` descending                                                         | Newest first, the usual ticket queue view                     |
+| Description         | Required, `max(5000)`; `title` `max(200)`                                       | Bounds for a plain-text MVP                                   |
+| Category on create  | Must reference an existing, enabled category                                    | Prevents orphaned or retired categories on new work           |
 
 ## API contract
 
@@ -62,12 +62,12 @@ The public ticket object (used by create/list/detail responses):
 
 Create a ticket. Request body:
 
-| Field         | Type   | Validation                                   |
-| ------------- | ------ | -------------------------------------------- |
-| `title`       | string | `min(1)`, `max(200)`, trimmed                |
-| `description` | string | `min(1)`, `max(5000)`                        |
-| `categoryId`  | string | uuid, must reference an enabled category     |
-| `priority`    | enum   | optional, `low`/`medium`/`high`/`urgent`, default `medium` |
+| Field         | Type   | Validation                                                          |
+| ------------- | ------ | ------------------------------------------------------------------- |
+| `title`       | string | `min(1)`, `max(200)`, trimmed                                       |
+| `description` | string | `min(1)`, `max(5000)`                                               |
+| `categoryId`  | string | uuid, must reference an enabled category                            |
+| `priority`    | enum   | optional, `low`/`medium`/`high`/`urgent`, default `medium`          |
 | `requesterId` | string | optional uuid; only agents/admins may set it, default is the caller |
 
 Success `200` — `data`: the created ticket (`status` is `pending`, `handlerId` is `null`).
@@ -78,16 +78,16 @@ Errors: `400 VALIDATION_ERROR`; `400 INVALID_CATEGORY` when `categoryId` is miss
 
 Paginated list. Query: `page`, `pageSize` (per `common/pagination.md`), plus optional filters:
 
-| Query         | Type   | Meaning                                  |
-| ------------- | ------ | ---------------------------------------- |
-| `status`      | enum   | exact status match                       |
-| `priority`    | enum   | exact priority match                     |
-| `categoryId`  | uuid   | exact category match                     |
-| `requesterId` | uuid   | exact requester match                    |
-| `handlerId`   | uuid   | exact handler match                      |
-| `keyword`     | string | substring on `title`/`description`, case-insensitive |
-| `createdFrom` | ISO date | `created_at >=`                       |
-| `createdTo`   | ISO date | `created_at <=`                       |
+| Query         | Type     | Meaning                                              |
+| ------------- | -------- | ---------------------------------------------------- |
+| `status`      | enum     | exact status match                                   |
+| `priority`    | enum     | exact priority match                                 |
+| `categoryId`  | uuid     | exact category match                                 |
+| `requesterId` | uuid     | exact requester match                                |
+| `handlerId`   | uuid     | exact handler match                                  |
+| `keyword`     | string   | substring on `title`/`description`, case-insensitive |
+| `createdFrom` | ISO date | `created_at >=`                                      |
+| `createdTo`   | ISO date | `created_at <=`                                      |
 
 Visibility: a `user` role always has `requesterId` forced to their own id (an explicit `requesterId` filter that differs is ignored, not honored); `agent`/`admin` see all.
 
@@ -101,42 +101,42 @@ Read one ticket. Success `200` — `data`: ticket. Errors: `404 TICKET_NOT_FOUND
 
 ### `tickets`
 
-| Column         | Type        | Null | Default              | Constraints / notes                     |
-| -------------- | ----------- | ---- | -------------------- | --------------------------------------- |
-| `id`           | uuid        | no   | `gen_random_uuid()`  | PK                                      |
-| `title`        | text        | no   | —                    |                                         |
-| `description`  | text        | no   | —                    |                                         |
-| `category_id`  | uuid        | no   | —                    | FK → `ticket_categories.id`             |
-| `priority`     | ticket_priority | no | `'medium'`         | pgEnum                                  |
-| `status`       | ticket_status | no  | `'pending'`          | pgEnum                                  |
-| `requester_id` | uuid        | no   | —                    | FK → `users.id`                         |
-| `handler_id`   | uuid        | yes  | —                    | FK → `users.id`, nullable               |
-| `resolved_at`  | timestamptz | yes  | —                    | set on transition to `resolved`         |
-| `closed_at`    | timestamptz | yes  | —                    | set on transition to `closed`           |
-| `created_at`   | timestamptz | no   | `now()`              |                                         |
-| `updated_at`   | timestamptz | no   | `now()`              | refreshed on update                     |
+| Column         | Type            | Null | Default             | Constraints / notes             |
+| -------------- | --------------- | ---- | ------------------- | ------------------------------- |
+| `id`           | uuid            | no   | `gen_random_uuid()` | PK                              |
+| `title`        | text            | no   | —                   |                                 |
+| `description`  | text            | no   | —                   |                                 |
+| `category_id`  | uuid            | no   | —                   | FK → `ticket_categories.id`     |
+| `priority`     | ticket_priority | no   | `'medium'`          | pgEnum                          |
+| `status`       | ticket_status   | no   | `'pending'`         | pgEnum                          |
+| `requester_id` | uuid            | no   | —                   | FK → `users.id`                 |
+| `handler_id`   | uuid            | yes  | —                   | FK → `users.id`, nullable       |
+| `resolved_at`  | timestamptz     | yes  | —                   | set on transition to `resolved` |
+| `closed_at`    | timestamptz     | yes  | —                   | set on transition to `closed`   |
+| `created_at`   | timestamptz     | no   | `now()`             |                                 |
+| `updated_at`   | timestamptz     | no   | `now()`             | refreshed on update             |
 
 Two new enums: `ticket_priority` (`low`, `medium`, `high`, `urgent`) and `ticket_status` (`pending`, `in_progress`, `resolved`, `closed`, `cancelled`). This is part of the second migration alongside `ticket_categories`.
 
 ## Error codes
 
-| Code                  | HTTP | Used by                    |
-| --------------------- | ---- | -------------------------- |
-| `TICKET_NOT_FOUND`    | 404  | get                        |
-| `INVALID_CATEGORY`    | 400  | create (bad `categoryId`)  |
+| Code               | HTTP | Used by                   |
+| ------------------ | ---- | ------------------------- |
+| `TICKET_NOT_FOUND` | 404  | get                       |
+| `INVALID_CATEGORY` | 400  | create (bad `categoryId`) |
 
 `FORBIDDEN` (403) is reused for visibility denials and the requester-override rule.
 
 ## Architecture mapping
 
-| Path | Responsibility |
-| ---- | -------------- |
-| `src/routes/tickets.ts` (+ `.spec.ts`) | Routes + OpenAPI, guarded by `requireAuth` |
-| `src/schemas/ticket.ts` | Zod request/response schemas |
+| Path                                    | Responsibility                                                               |
+| --------------------------------------- | ---------------------------------------------------------------------------- |
+| `src/routes/tickets.ts` (+ `.spec.ts`)  | Routes + OpenAPI, guarded by `requireAuth`                                   |
+| `src/schemas/ticket.ts`                 | Zod request/response schemas                                                 |
 | `src/services/ticket.ts` (+ `.spec.ts`) | Creation (category check, requester override), visibility-filtered list/read |
-| `src/repositories/ticket-repository.ts` | Drizzle implementation + interface |
-| `src/repositories/fakes.ts` | In-memory fake |
-| `src/db/schema.ts` | `tickets` table + enums |
+| `src/repositories/ticket-repository.ts` | Drizzle implementation + interface                                           |
+| `src/repositories/fakes.ts`             | In-memory fake                                                               |
+| `src/db/schema.ts`                      | `tickets` table + enums                                                      |
 
 ## Testing strategy
 

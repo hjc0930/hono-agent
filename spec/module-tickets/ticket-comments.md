@@ -24,14 +24,14 @@ Comments are the communication channel on a ticket. They come in two kinds: `pub
 
 ## Decisions
 
-| Topic | Decision | Rationale |
-| ----- | -------- | --------- |
-| Kinds | `public` / `internal` | Mirrors the roadmap's public-reply vs internal-note split |
-| Author access | `user` may post `public` only; `agent`/`admin` may post either | Requesters never author internal notes |
-| Visibility | `internal` comments are hidden from the requester; a requester only ever lists comments on their own ticket | Enforces the two-channel model |
-| Immutability | Comments are append-only (no update/delete) | Simpler audit trail; consistent with `ticket_events` |
-| Ordering | `created_at` ascending | Chronological thread |
-| Body | `max(5000)`, non-empty | Bounded plain text |
+| Topic         | Decision                                                                                                    | Rationale                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Kinds         | `public` / `internal`                                                                                       | Mirrors the roadmap's public-reply vs internal-note split |
+| Author access | `user` may post `public` only; `agent`/`admin` may post either                                              | Requesters never author internal notes                    |
+| Visibility    | `internal` comments are hidden from the requester; a requester only ever lists comments on their own ticket | Enforces the two-channel model                            |
+| Immutability  | Comments are append-only (no update/delete)                                                                 | Simpler audit trail; consistent with `ticket_events`      |
+| Ordering      | `created_at` ascending                                                                                      | Chronological thread                                      |
+| Body          | `max(5000)`, non-empty                                                                                      | Bounded plain text                                        |
 
 ## API contract
 
@@ -41,9 +41,9 @@ Both routes require `requireAuth`; the service enforces per-ticket visibility (a
 
 Request body:
 
-| Field  | Type   | Validation                          |
-| ------ | ------ | ----------------------------------- |
-| `body` | string | `min(1)`, `max(5000)`               |
+| Field  | Type   | Validation                                      |
+| ------ | ------ | ----------------------------------------------- |
+| `body` | string | `min(1)`, `max(5000)`                           |
 | `kind` | enum   | optional, `public`/`internal`, default `public` |
 
 A `user` role posting `kind: internal` is rejected.
@@ -75,14 +75,14 @@ Errors: `404 TICKET_NOT_FOUND`; `403 FORBIDDEN` (user reading another's ticket).
 
 ### `ticket_comments`
 
-| Column       | Type        | Null | Default  | Constraints / notes                  |
-| ------------ | ----------- | ---- | -------- | ------------------------------------ |
-| `id`         | uuid        | no   | uuid     | PK                                   |
-| `ticket_id`  | uuid        | no   | —        | FK → `tickets.id` ON DELETE CASCADE, indexed |
-| `author_id`  | uuid        | no   | —        | FK → `users.id`                      |
-| `body`       | text        | no   | —        |                                      |
-| `kind`       | comment_kind | no  | `public` | pgEnum `public`/`internal`           |
-| `created_at` | timestamptz | no   | `now()`  |                                      |
+| Column       | Type         | Null | Default  | Constraints / notes                          |
+| ------------ | ------------ | ---- | -------- | -------------------------------------------- |
+| `id`         | uuid         | no   | uuid     | PK                                           |
+| `ticket_id`  | uuid         | no   | —        | FK → `tickets.id` ON DELETE CASCADE, indexed |
+| `author_id`  | uuid         | no   | —        | FK → `users.id`                              |
+| `body`       | text         | no   | —        |                                              |
+| `kind`       | comment_kind | no   | `public` | pgEnum `public`/`internal`                   |
+| `created_at` | timestamptz  | no   | `now()`  |                                              |
 
 One new enum: `comment_kind` (`public`, `internal`). Part of the second migration.
 
@@ -92,13 +92,13 @@ No new error codes; `FORBIDDEN` (403) and `TICKET_NOT_FOUND` (404) are reused.
 
 ## Architecture mapping
 
-| Path | Responsibility |
-| ---- | -------------- |
-| `src/routes/tickets.ts` (+ `.spec.ts`) | comment routes + OpenAPI |
-| `src/schemas/ticket-comment.ts` | Zod request/response schemas |
+| Path                                            | Responsibility                                      |
+| ----------------------------------------------- | --------------------------------------------------- |
+| `src/routes/tickets.ts` (+ `.spec.ts`)          | comment routes + OpenAPI                            |
+| `src/schemas/ticket-comment.ts`                 | Zod request/response schemas                        |
 | `src/services/ticket-comment.ts` (+ `.spec.ts`) | Author/kind validation, visibility-filtered listing |
-| `src/repositories/ticket-comment-repository.ts` | Drizzle implementation + interface |
-| `src/db/schema.ts` | `ticket_comments` table + `comment_kind` enum |
+| `src/repositories/ticket-comment-repository.ts` | Drizzle implementation + interface                  |
+| `src/db/schema.ts`                              | `ticket_comments` table + `comment_kind` enum       |
 
 ## Testing strategy
 
