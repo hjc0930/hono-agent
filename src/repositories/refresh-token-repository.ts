@@ -57,7 +57,7 @@ export class DrizzleRefreshTokenRepository implements RefreshTokenRepository {
       .update(refreshTokens)
       .set({ revokedAt: new Date() })
       .where(and(eq(refreshTokens.id, id), isNull(refreshTokens.revokedAt)))
-      .returning({ id: refreshTokens.id })
+      .returning()
     return updated.length > 0
   }
 

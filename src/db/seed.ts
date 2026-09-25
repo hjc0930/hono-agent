@@ -4,6 +4,7 @@ import { logger } from '../lib/logger.ts'
 import { hashPassword } from '../lib/password.ts'
 import { DrizzleUserRepository } from '../repositories/user-repository.ts'
 import { getDatabase } from './client.ts'
+import { runMigrations } from './migrate.ts'
 
 const USERNAME_PATTERN = /^[a-z0-9_-]{3,32}$/
 
@@ -15,15 +16,10 @@ export type SeedConfig = {
 export type SeedConfigResult = { ok: true; config: SeedConfig } | { ok: false; errors: string[] }
 
 export const validateSeedConfig = (source: {
-  DATABASE_URL?: string
   SEED_ADMIN_USERNAME?: string
   SEED_ADMIN_PASSWORD?: string
 }): SeedConfigResult => {
   const errors: string[] = []
-
-  if (!source.DATABASE_URL || source.DATABASE_URL.length === 0) {
-    errors.push('DATABASE_URL is required to run the seed script')
-  }
 
   const username = source.SEED_ADMIN_USERNAME ?? 'admin'
   if (!USERNAME_PATTERN.test(username)) {
@@ -46,6 +42,8 @@ const run = async (): Promise<void> => {
     process.exitCode = 1
     return
   }
+
+  await runMigrations()
 
   const { username, password } = parsed.config
   const repository = new DrizzleUserRepository(getDatabase)
