@@ -46,12 +46,17 @@ pnpm test
 pnpm run test:e2e
 pnpm run test:watch
 pnpm run build
+pnpm start
 ```
 
 Unit tests use the `*.spec.ts` suffix and live beside the source they cover. The application E2E
 suite follows the NestJS directory convention at `test/app.e2e.spec.ts`.
 
 Formatting is provided by Oxfmt and linting by Oxlint. Their project configuration lives in `.oxfmtrc.json` and `.oxlintrc.json`.
+
+`pnpm dev` uses package scripts to clean `dist/`, perform an initial TypeScript compilation, and then run the TypeScript compiler and Node.js in watch mode through `concurrently`. Both development and production use `tsconfig.build.json` and execute the same JavaScript file structure under `dist/`. Do not run `pnpm run build` while `pnpm dev` is active because both commands manage the same output directory.
+
+`pnpm run build` creates a clean production build with `tsc`. `pnpm start` runs the compiled `dist/server.js` entry point without a TypeScript runtime loader.
 
 After `pnpm dev`, the service exposes:
 
@@ -71,4 +76,4 @@ openApi:     http://localhost:<port>/openapi.json
 
 Read [AGENTS.md](./AGENTS.md) and the relevant document in `spec/` before making changes. Routes own HTTP behavior; services own business logic; repositories own persistence access. New capabilities require a specification and corresponding tests.
 
-Internal TypeScript source imports use the `.ts` extension. The project enables TypeScript's `allowImportingTsExtensions` with `noEmit` for checking, while tsup bundles the production output into executable `.js` files.
+Internal TypeScript source imports use the `.ts` extension. The emitting TypeScript configuration rewrites relative `.ts` extensions to `.js`, so Node.js can execute the compiled ESM output directly.

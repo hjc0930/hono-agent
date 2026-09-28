@@ -10,7 +10,7 @@ The project requires Node.js 22+ and pnpm. Run commands from the repository root
 
 - `pnpm install` — install dependencies from the lockfile.
 - `cp .env.example .env` — create local configuration; never commit `.env`.
-- `pnpm dev` — start the development server.
+- `pnpm dev` — compile with tsc in watch mode and run the emitted server with Node.js watch mode.
 - `PORT=<port> pnpm dev` — prefer a specific local port. If occupied, the server searches higher ports and prints the selected application, Swagger UI, and OpenAPI URLs.
 - `pnpm start` — run the compiled production server from `dist/`.
 
@@ -24,7 +24,7 @@ The project requires Node.js 22+ and pnpm. Run commands from the repository root
 - `pnpm run test:e2e` — run the application E2E suite.
 - `pnpm run test:watch` — watch colocated unit tests while developing.
 - `pnpm test -- src/<path>/<file>.spec.ts` — run one unit test file while iterating.
-- `pnpm run build` — build the production server into `dist/` with tsup.
+- `pnpm run build` — build the production server into `dist/` with tsc.
 
 ### Database commands
 
@@ -55,7 +55,7 @@ The project requires Node.js 22+ and pnpm. Run commands from the repository root
 - Put request and response validation schemas in `schemas/`, business logic in `services/`, and persistence access in `repositories/`.
 - Routes must not access the database directly.
 - Validate all external input with Zod and update OpenAPI definitions whenever public API contracts change.
-- Internal TypeScript imports use the `.ts` extension. TypeScript checks with `noEmit`; tsup produces the executable `.js` build.
+- Internal TypeScript imports use the `.ts` extension. TypeScript checks with `noEmit`; `tsconfig.build.json` rewrites relative import extensions and emits the executable `.js` build.
 
 ## Testing
 

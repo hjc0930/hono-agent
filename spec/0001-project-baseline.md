@@ -35,7 +35,7 @@ This project provides a durable REST backend baseline for a future web applicati
 | `@hono/zod-openapi` + `@hono/swagger-ui` | One source of truth for validation-aware OpenAPI routes and interactive docs.        |
 | Pino                                     | Low-overhead structured logs suitable for aggregation.                               |
 | Vitest                                   | TypeScript-native test runner for fast integration-style API tests.                  |
-| tsx + tsup                               | Development execution and a compact production build respectively.                   |
+| TypeScript compiler + Node.js watch mode | Shared development and production emission plus development server restart.          |
 | Oxlint + Oxfmt                           | Fast Rust-based linting and formatting that replace ESLint and Prettier.             |
 
 ## Recommended directory structure
@@ -185,6 +185,17 @@ Completed on 2026-08-24:
 
 - Internal TypeScript source and test imports now use `.ts` extensions.
 - `allowImportingTsExtensions` and `noEmit` are enabled for TypeScript checking; tsup continues to emit executable `.js` production output.
+
+## TypeScript compiler workflow migration record
+
+Completed on 2026-09-29:
+
+- Replaced the tsx application development server and tsup production build with JavaScript emitted by the TypeScript compiler.
+- Development and production share `tsconfig.build.json` and the same multi-file output under `dist/`.
+- Development uses `tsc --watch` for compilation and Node.js watch mode for server restarts, with `concurrently` managing both processes from `package.json`.
+- Relative `.ts` source import extensions are rewritten to executable `.js` imports during emission.
+- `tsx` remains available only for the database migration and seed scripts.
+- See `spec/0003-tsc-development-build-workflow.md` for the current workflow contract.
 
 ## Dependency versioning rule
 

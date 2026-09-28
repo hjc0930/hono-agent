@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "predev": "tsc --build tsconfig.build.json --clean && tsc --project tsconfig.build.json",
+    "dev": "concurrently --kill-others --names tsc,node \"tsc --project tsconfig.build.json --watch --preserveWatchOutput\" \"node --watch --watch-preserve-output --enable-source-maps dist/server.js\"",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint",
@@ -12,8 +13,8 @@
     "test": "vitest run src",
     "test:e2e": "vitest run test",
     "test:watch": "vitest src",
-    "build": "tsup",
-    "start": "node dist/server.js",
+    "build": "tsc --build tsconfig.build.json --clean && tsc --project tsconfig.build.json",
+    "start": "node --enable-source-maps dist/server.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts"
@@ -32,10 +33,10 @@
   "devDependencies": {
     "@types/node": "^26.2.0",
     "@types/pg": "8.23.1",
+    "concurrently": "^10.0.5",
     "drizzle-kit": "^0.31.10",
     "oxfmt": "^0.64.0",
     "oxlint": "^1.79.0",
-    "tsup": "^8.5.1",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11"
