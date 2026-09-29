@@ -8,4 +8,4 @@ export const paginationQuerySchema = z.object({
   pageSize: pageSizeQuerySchema,
 })
 
-export type PaginationQuery = z.infer<typeof paginationQuerySchema>
+export type PaginationQueryType = z.infer<typeof paginationQuerySchema>

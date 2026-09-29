@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import type { EnvType } from './env.ts'
+
 const TEST_SECRET = 'vitest-only-secret-0123456789abcdef0123456789abcdef'
 
 const ENV_KEYS = [
@@ -17,7 +19,7 @@ const ENV_KEYS = [
   'AUTH_IP_WINDOW_SECONDS',
   'SEED_ADMIN_USERNAME',
   'SEED_ADMIN_PASSWORD',
-] as const
+] as const satisfies readonly (keyof EnvType)[]
 
 type EnvKey = (typeof ENV_KEYS)[number]
 

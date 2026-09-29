@@ -55,6 +55,7 @@ The project requires Node.js 22+ and pnpm. Run commands from the repository root
 - Put request and response validation schemas in `schemas/`, business logic in `services/`, and persistence access in `repositories/`.
 - Routes must not access the database directly.
 - Validate all external input with Zod and update OpenAPI definitions whenever public API contracts change.
+- Type aliases inferred from Zod schemas must use the `Type` suffix (for example, `type EnvType = z.infer<typeof envSchema>`).
 - Internal TypeScript imports use the `.ts` extension. TypeScript checks with `noEmit`; `tsconfig.build.json` rewrites relative import extensions and emits the executable `.js` build.
 
 ## Testing

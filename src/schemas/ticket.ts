@@ -43,6 +43,8 @@ export const ticketListQuerySchema = paginationQuerySchema.extend({
   createdTo: z.iso.datetime().optional(),
 })
 
+export type TicketListQueryType = z.infer<typeof ticketListQuerySchema>
+
 export const transitionRequestSchema = z.object({
   to: z.enum(['in_progress', 'resolved', 'closed', 'cancelled']),
 })

@@ -27,6 +27,7 @@ import {
   ticketResponseSchema,
   transitionRequestSchema,
 } from '../schemas/ticket.ts'
+import type { TicketListQueryType } from '../schemas/ticket.ts'
 import {
   commentFailureResponseSchema,
   commentListResponseSchema,
@@ -243,7 +244,7 @@ const actorFrom = (context: { get: (key: 'userId' | 'userRole') => string }): Ac
   role: context.get('userRole') as ActorContext['role'],
 })
 
-const toFilter = (query: z.infer<typeof ticketListQuerySchema>): TicketListFilter => ({
+const toFilter = (query: TicketListQueryType): TicketListFilter => ({
   page: query.page,
   pageSize: query.pageSize,
   ...(query.status !== undefined ? { status: query.status } : {}),

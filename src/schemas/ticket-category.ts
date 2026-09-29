@@ -24,6 +24,8 @@ export const ticketCategoryListQuerySchema = paginationQuerySchema.extend({
   keyword: z.string().trim().min(1).optional(),
 })
 
+export type TicketCategoryListQueryType = z.infer<typeof ticketCategoryListQuerySchema>
+
 export const updateTicketCategoryRequestSchema = z
   .object({
     name: z.string().trim().min(1).max(64).optional(),

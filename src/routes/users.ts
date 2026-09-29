@@ -17,6 +17,7 @@ import {
   userListResponseSchema,
   userResponseSchema,
 } from '../schemas/user.ts'
+import type { UserListQueryType } from '../schemas/user.ts'
 
 export type UserRouteDependencies = {
   userRepository?: UserRepository
@@ -156,7 +157,7 @@ const resetPasswordRoute = createRoute({
 
 const requestPath = (context: { req: { url: string } }): string => new URL(context.req.url).pathname
 
-const toFilter = (query: z.infer<typeof userListQuerySchema>): UserListFilter => ({
+const toFilter = (query: UserListQueryType): UserListFilter => ({
   page: query.page,
   pageSize: query.pageSize,
   ...(query.role !== undefined ? { role: query.role } : {}),

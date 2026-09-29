@@ -19,6 +19,7 @@ import {
   ticketCategoryResponseSchema,
   updateTicketCategoryRequestSchema,
 } from '../schemas/ticket-category.ts'
+import type { TicketCategoryListQueryType } from '../schemas/ticket-category.ts'
 
 export type TicketCategoryRouteDependencies = {
   ticketCategoryRepository?: TicketCategoryRepository
@@ -132,9 +133,7 @@ const updateCategoryRoute = createRoute({
 
 const requestPath = (context: { req: { url: string } }): string => new URL(context.req.url).pathname
 
-const toFilter = (
-  query: z.infer<typeof ticketCategoryListQuerySchema>,
-): TicketCategoryListFilter => ({
+const toFilter = (query: TicketCategoryListQueryType): TicketCategoryListFilter => ({
   page: query.page,
   pageSize: query.pageSize,
   ...(query.enabled !== undefined ? { enabled: query.enabled } : {}),

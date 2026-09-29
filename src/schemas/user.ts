@@ -22,6 +22,8 @@ export const userListQuerySchema = paginationQuerySchema.extend({
   keyword: z.string().trim().min(1).optional(),
 })
 
+export type UserListQueryType = z.infer<typeof userListQuerySchema>
+
 export const updateUserRequestSchema = z
   .object({
     displayName: z.string().trim().min(1).nullable().optional(),
