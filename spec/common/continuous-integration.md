@@ -2,9 +2,9 @@
 
 ## Branch policy
 
-The `develop` branch is the integration branch and accepts both ordinary direct
-pushes and pull requests. An active GitHub branch ruleset targets only
-`refs/heads/develop` and prevents deletion and non-fast-forward updates, with no
+The `develop` branch is the integration branch and accepts ordinary direct
+pushes, force pushes, and pull requests. An active GitHub branch ruleset targets only
+`refs/heads/develop` and prevents deletion, with no
 bypass actors. It does not require pull requests, approvals, status checks, or
 up-to-date branches. CI failures provide feedback but do not block merging or
 undo commits already pushed. Existing rules for `main` remain unchanged.
@@ -41,7 +41,7 @@ external database, deployment, migration, or seed operation is required.
 - Run the existing quality commands before publishing the workflow.
 - Verify the first GitHub Actions push run completes all six checks successfully.
 - Read back the remote ruleset and confirm its exact branch target, active
-  enforcement, empty bypass list, and only deletion/non-fast-forward rules.
+  enforcement, empty bypass list, and only the deletion rule.
 - Confirm a normal push to `develop` is accepted after the ruleset is enabled.
 - Subsequent PRs targeting `develop` must show CI feedback without mandatory
   approval or required-status-check restrictions.
