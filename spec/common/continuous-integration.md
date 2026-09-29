@@ -11,7 +11,7 @@ undo commits already pushed. Existing rules for `main` remain unchanged.
 
 ## Workflow
 
-`.github/workflows/ci.yml` runs on pushes to `develop` and pull requests targeting
+`.github/workflows/develop-ci.yml` (display name: `Develop CI`) runs on pushes to `develop` and pull requests targeting
 `develop`. It also declares `workflow_dispatch`; GitHub exposes manual dispatch
 after this workflow exists on the repository's default branch (`main`). Adding
 the workflow to `main` is a separate merge, not a default-branch change.
