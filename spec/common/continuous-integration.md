@@ -18,7 +18,7 @@ the workflow to `main` is a separate merge, not a default-branch change.
 
 The workflow uses one `quality` job on Ubuntu 24.04, with Node.js 24.21.0 and pnpm
 12.6.0 matching the development environment at introduction. Action references
-use major-version tags (`@v4`) for readability. The job has a ten-minute timeout and read-only
+use major-version tags (`@v5`) for readability. The job has a ten-minute timeout and read-only
 repository contents permission. Checkout does not persist credentials.
 
 Cache the pnpm store using `pnpm-lock.yaml` and install with
