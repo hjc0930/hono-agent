@@ -4,7 +4,7 @@ Module: `module-tickets` · Batch: Phase 2 · Related: `tickets-crud.md`, `modul
 
 ## Status
 
-Draft — awaiting review. No implementation yet.
+Completed.
 
 ## Background
 

@@ -4,7 +4,7 @@ Module: `module-auth-users` · Batch: Phase 1 · Related: `login.md`, `rbac.md`,
 
 ## Status
 
-Draft — awaiting review. No implementation yet.
+Completed.
 
 ## Background
 

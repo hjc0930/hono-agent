@@ -4,7 +4,7 @@ Module: `module-tickets` · Batch: Phase 2 · Related: `ticket-categories.md`, `
 
 ## Status
 
-Draft — awaiting review. No implementation yet.
+Completed.
 
 ## Background
 
