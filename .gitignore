@@ -8,6 +8,7 @@ node_modules/
 
 # Build and coverage output
 dist/
+.tsdown-dev/
 coverage/
 *.tsbuildinfo
 

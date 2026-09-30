@@ -66,9 +66,11 @@ Errors: `400 VALIDATION_ERROR`; `409 CATEGORY_NAME_TAKEN` when `name` already ex
 
 ### GET /api/ticket-categories
 
-Paginated list. Query: `page`, `pageSize` (per `common/pagination.md`), plus optional `enabled` (`true`/`false`) and `keyword` (substring match on `name` or `description`, case-insensitive).
+Paginated list. Query: `page`, `pageSize` (per `common/pagination.md`), plus optional `enabled` and `keyword` (substring match on `name` or `description`, case-insensitive). Use `enabled=true` or `enabled=false` to filter by status. The `enabled` query is parsed with Zod `stringbool`, so it also accepts the case-insensitive aliases `1`/`0`, `yes`/`no`, `on`/`off`, `y`/`n`, and `enabled`/`disabled`.
 
 Success `200` — `data`: array of categories, `meta`: pagination.
+
+An unrecognized `enabled` value returns `400 VALIDATION_ERROR`.
 
 ### GET /api/ticket-categories/:id
 
@@ -123,7 +125,7 @@ This is the second migration (after the Phase 1 `users`/`refresh_tokens` tables)
 
 Colocated unit tests only (no E2E, per AGENTS.md). Service tests use the in-memory fake repository; route tests use `createApp` with the fake injected.
 
-Cover: create (success + `CATEGORY_NAME_TAKEN`); list (pagination, `enabled` filter, `keyword` filter, empty result); get (found + `CATEGORY_NOT_FOUND`); update (name/description/enabled, name conflict, `CATEGORY_NOT_FOUND`, empty body rejected); authorization (unauthenticated 401, non-admin write 403, authenticated read allowed).
+Cover: create (success + `CATEGORY_NAME_TAKEN`); list (pagination, `enabled=true`/`false` filtering, stringbool aliases, invalid `enabled` rejected, `keyword` filter, empty result); get (found + `CATEGORY_NOT_FOUND`); update (name/description/enabled, name conflict, `CATEGORY_NOT_FOUND`, empty body rejected); authorization (unauthenticated 401, non-admin write 403, authenticated read allowed).
 
 ## Acceptance criteria
 

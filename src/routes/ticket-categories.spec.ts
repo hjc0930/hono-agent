@@ -77,6 +77,36 @@ describe('GET /api/ticket-categories', () => {
     expect(body.data).toHaveLength(1)
     expect(body.meta).toMatchObject({ page: 1, pageSize: 10, total: 1, totalPages: 1 })
   })
+
+  it.each([
+    ['true', true, '账号问题'],
+    ['false', false, '停用分类'],
+    ['1', true, '账号问题'],
+    ['0', false, '停用分类'],
+  ] as const)('filters categories when enabled=%s', async (enabled, expectedEnabled, name) => {
+    const { app, adminToken, ticketCategoryRepository } = await buildApp()
+    await ticketCategoryRepository.insert({ name: '停用分类', description: null, enabled: false })
+
+    const response = await app.request(`/api/ticket-categories?enabled=${enabled}`, {
+      headers: authed(adminToken),
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body.data).toHaveLength(1)
+    expect(body.data[0]).toMatchObject({ name, enabled: expectedEnabled })
+    expect(body.meta.total).toBe(1)
+  })
+
+  it('rejects an invalid enabled query value', async () => {
+    const { app, adminToken } = await buildApp()
+    const response = await app.request('/api/ticket-categories?enabled=maybe', {
+      headers: authed(adminToken),
+    })
+
+    expect(response.status).toBe(400)
+    expect((await response.json()).code).toBe('VALIDATION_ERROR')
+  })
 })
 
 describe('GET /api/ticket-categories/:id', () => {

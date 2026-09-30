@@ -20,7 +20,7 @@ export const createTicketCategoryRequestSchema = z.object({
 })
 
 export const ticketCategoryListQuerySchema = paginationQuerySchema.extend({
-  enabled: z.coerce.boolean().optional(),
+  enabled: z.stringbool().optional(),
   keyword: z.string().trim().min(1).optional(),
 })
 

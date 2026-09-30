@@ -4,13 +4,13 @@ This file defines how agents should work in the Hono Agent Backend repository.
 
 ## Development Commands
 
-The project requires Node.js 22+ and pnpm. Run commands from the repository root.
+The project requires Node.js 22.18+, 24.11+, or 26+, and pnpm. Run commands from the repository root.
 
 ### Setup and local server
 
 - `pnpm install` — install dependencies from the lockfile.
 - `cp .env.example .env` — create local configuration; never commit `.env`.
-- `pnpm dev` — compile with tsc in watch mode and run the emitted server with Node.js watch mode.
+- `pnpm dev` — type-check once, then use tsdown to watch, compile into `.tsdown-dev/`, and restart the Node.js server.
 - `PORT=<port> pnpm dev` — prefer a specific local port. If occupied, the server searches higher ports and prints the selected application, Swagger UI, and OpenAPI URLs.
 - `pnpm start` — run the compiled production server from `dist/`.
 
@@ -24,7 +24,7 @@ The project requires Node.js 22+ and pnpm. Run commands from the repository root
 - `pnpm run test:e2e` — run the application E2E suite.
 - `pnpm run test:watch` — watch colocated unit tests while developing.
 - `pnpm test -- src/<path>/<file>.spec.ts` — run one unit test file while iterating.
-- `pnpm run build` — build the production server into `dist/` with tsc.
+- `pnpm run build` — type-check and build the production server into `dist/` with tsdown.
 
 ### Database commands
 
@@ -56,7 +56,7 @@ The project requires Node.js 22+ and pnpm. Run commands from the repository root
 - Routes must not access the database directly.
 - Validate all external input with Zod and update OpenAPI definitions whenever public API contracts change.
 - Type aliases inferred from Zod schemas must use the `Type` suffix (for example, `type EnvType = z.infer<typeof envSchema>`).
-- Internal TypeScript imports use the `.ts` extension. TypeScript checks with `noEmit`; `tsconfig.build.json` rewrites relative import extensions and emits the executable `.js` build.
+- Internal TypeScript imports use the `.ts` extension. TypeScript checks with `noEmit`; tsdown bundles the executable `.js` build.
 
 ## Testing
 

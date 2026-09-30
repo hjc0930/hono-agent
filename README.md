@@ -4,7 +4,7 @@ Hono-based ticket system backend with authentication, role-based access control,
 
 ## Requirements
 
-- Node.js 22 or newer
+- Node.js 22.18+, 24.11+, or 26+
 - pnpm
 
 ## Install
@@ -54,9 +54,9 @@ suite follows the NestJS directory convention at `test/app.e2e.spec.ts`.
 
 Formatting is provided by Oxfmt and linting by Oxlint. Their project configuration lives in `.oxfmtrc.json` and `.oxlintrc.json`.
 
-`pnpm dev` uses package scripts to clean `dist/`, perform an initial TypeScript compilation, and then run the TypeScript compiler and Node.js in watch mode through `concurrently`. Both development and production use `tsconfig.build.json` and execute the same JavaScript file structure under `dist/`. Do not run `pnpm run build` while `pnpm dev` is active because both commands manage the same output directory.
+`pnpm dev` checks types once, then tsdown watches source files and restarts the Node.js server after successful builds. Development writes only to the ignored `.tsdown-dev/` directory; it does not create or change `dist/`. Watch-mode rebuilds do not repeat type checking, so run `pnpm run typecheck` separately after edits.
 
-`pnpm run build` creates a clean production build with `tsc`. `pnpm start` runs the compiled `dist/server.js` entry point without a TypeScript runtime loader.
+`pnpm run build` checks types and creates a clean production build with tsdown. `pnpm start` runs the compiled `dist/server.js` entry point without a TypeScript runtime loader.
 
 After `pnpm dev`, the service exposes:
 
@@ -76,4 +76,4 @@ openApi:     http://localhost:<port>/openapi.json
 
 Read [AGENTS.md](./AGENTS.md) and the relevant document in `spec/` before making changes. Routes own HTTP behavior; services own business logic; repositories own persistence access. New capabilities require a specification and corresponding tests.
 
-Internal TypeScript source imports use the `.ts` extension. The emitting TypeScript configuration rewrites relative `.ts` extensions to `.js`, so Node.js can execute the compiled ESM output directly.
+Internal TypeScript source imports use the `.ts` extension. TypeScript checks these imports without emitting files; tsdown bundles the server into executable ESM.
