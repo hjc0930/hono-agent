@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { hashPassword } from '../lib/password.ts'
 import { MemoryRefreshTokenRepository, MemoryUserRepository } from '../repositories/fakes.ts'
@@ -122,6 +122,40 @@ describe('AuthService.refresh', () => {
       .find((row) => row.tokenHash === sha256(rotated.refreshToken))
     expect(oldRow?.revokedAt).not.toBeNull()
     expect(newRow?.revokedAt).toBeNull()
+  })
+
+  it('keeps the old token usable when inserting its replacement fails', async () => {
+    const { service, refreshTokenRepository } = await setup()
+    const login = await service.login({ username: 'admin', password: PASSWORD })
+    const insert = vi
+      .spyOn(refreshTokenRepository, 'insert')
+      .mockRejectedValueOnce(new Error('insert failed'))
+
+    await expect(service.refresh({ refreshToken: login.refreshToken })).rejects.toThrow(
+      'insert failed',
+    )
+    expect(refreshTokenRepository.all()).toHaveLength(1)
+    expect(refreshTokenRepository.all()[0]?.revokedAt).toBeNull()
+
+    insert.mockRestore()
+    await expect(service.refresh({ refreshToken: login.refreshToken })).resolves.toHaveProperty(
+      'refreshToken',
+    )
+  })
+
+  it('lets only one concurrent refresh win and revokes the replacement on reuse detection', async () => {
+    const { service, refreshTokenRepository } = await setup()
+    const login = await service.login({ username: 'admin', password: PASSWORD })
+
+    const results = await Promise.allSettled([
+      service.refresh({ refreshToken: login.refreshToken }),
+      service.refresh({ refreshToken: login.refreshToken }),
+    ])
+
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1)
+    expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1)
+    expect(refreshTokenRepository.all()).toHaveLength(2)
+    expect(refreshTokenRepository.all().every((row) => row.revokedAt !== null)).toBe(true)
   })
 
   it('treats reuse of a rotated token as theft: revokes every token of the user', async () => {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   MemoryTicketEventRepository,
@@ -12,12 +12,13 @@ import type { ActorContext } from './ticket.ts'
 const ALL_STATUSES: TicketStatus[] = ['pending', 'in_progress', 'resolved', 'closed', 'cancelled']
 
 const setup = (overrides: Partial<ReturnType<typeof makeTicket>> = {}) => {
-  const ticketRepository = new MemoryTicketRepository([
-    makeTicket({ id: 't-1', requesterId: 'requester-1', handlerId: 'handler-1', ...overrides }),
-  ])
   const ticketEventRepository = new MemoryTicketEventRepository()
-  const stateMachine = createTicketStateMachine({ ticketRepository, ticketEventRepository })
-  return { stateMachine, ticketEventRepository }
+  const ticketRepository = new MemoryTicketRepository(
+    [makeTicket({ id: 't-1', requesterId: 'requester-1', handlerId: 'handler-1', ...overrides })],
+    ticketEventRepository,
+  )
+  const stateMachine = createTicketStateMachine({ ticketRepository })
+  return { stateMachine, ticketRepository, ticketEventRepository }
 }
 
 const actor = (role: ActorContext['role'], userId = 'actor-1'): ActorContext => ({ userId, role })
@@ -45,6 +46,36 @@ describe('state machine — legal transitions', () => {
       })
     }
   }
+})
+
+describe('state machine — atomic timeline', () => {
+  it('does not change status when event insertion fails', async () => {
+    const { stateMachine, ticketRepository, ticketEventRepository } = setup()
+    vi.spyOn(ticketEventRepository, 'insert').mockRejectedValueOnce(
+      new Error('event insert failed'),
+    )
+
+    await expect(
+      stateMachine.transition({ ticketId: 't-1', to: 'cancelled', actor: actor('admin') }),
+    ).rejects.toThrow('event insert failed')
+    expect((await ticketRepository.findById('t-1'))?.status).toBe('pending')
+    expect(await ticketEventRepository.listByTicket('t-1')).toHaveLength(0)
+  })
+
+  it('rejects a stale transition without writing a timeline event', async () => {
+    const { stateMachine, ticketRepository, ticketEventRepository } = setup()
+    vi.spyOn(ticketRepository, 'updateWithEvent').mockImplementationOnce(async (...args) => {
+      await ticketRepository.update('t-1', { status: 'cancelled' })
+      return ticketRepository.updateWithEvent(...args)
+    })
+
+    const result = await errorFields(() =>
+      stateMachine.transition({ ticketId: 't-1', to: 'in_progress', actor: actor('admin') }),
+    )
+    expect(result).toEqual({ status: 400, code: 'INVALID_STATE_TRANSITION' })
+    expect((await ticketRepository.findById('t-1'))?.status).toBe('cancelled')
+    expect(await ticketEventRepository.listByTicket('t-1')).toHaveLength(0)
+  })
 })
 
 describe('state machine — illegal transitions', () => {

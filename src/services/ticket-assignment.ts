@@ -3,7 +3,6 @@ import {
   invalidStateTransitionError,
   ticketNotFoundError,
 } from '../lib/errors.ts'
-import type { TicketEventRepository } from '../repositories/ticket-event-repository.ts'
 import type { TicketPatch, TicketRepository } from '../repositories/ticket-repository.ts'
 import type { UserRepository } from '../repositories/user-repository.ts'
 import type { ActorContext, PublicTicket } from './ticket.ts'
@@ -15,10 +14,9 @@ export type TicketAssignmentService = {
 
 export const createTicketAssignmentService = (dependencies: {
   ticketRepository: TicketRepository
-  ticketEventRepository: TicketEventRepository
   userRepository: UserRepository
 }): TicketAssignmentService => {
-  const { ticketRepository, ticketEventRepository, userRepository } = dependencies
+  const { ticketRepository, userRepository } = dependencies
 
   return {
     async assign(input) {
@@ -41,16 +39,18 @@ export const createTicketAssignmentService = (dependencies: {
         throw invalidStateTransitionError()
       }
 
-      const updated = await ticketRepository.update(ticket.id, patch)
-      if (!updated) throw ticketNotFoundError()
-
-      if (fromStatus !== updated.status) {
-        await ticketEventRepository.insert({
-          ticketId: ticket.id,
-          actorId: input.actor.userId,
-          fromStatus,
-          toStatus: updated.status,
-        })
+      const updated =
+        fromStatus === 'pending'
+          ? await ticketRepository.updateWithEvent(
+              ticket.id,
+              'pending',
+              { ...patch, status: 'in_progress' },
+              input.actor.userId,
+            )
+          : await ticketRepository.update(ticket.id, patch)
+      if (!updated) {
+        if (!(await ticketRepository.findById(ticket.id))) throw ticketNotFoundError()
+        throw invalidStateTransitionError()
       }
 
       return toPublicTicket(updated)

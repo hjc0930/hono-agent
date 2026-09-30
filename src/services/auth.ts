@@ -121,13 +121,24 @@ export const createAuthService = (dependencies: {
         throw invalidRefreshTokenError()
       }
 
-      const oldRevoked = await refreshTokenRepository.revoke(stored.id)
-      if (!oldRevoked) {
+      const accessToken = await signAccessToken({ sub: user.id, role: user.role })
+      const refreshToken = generateRefreshToken()
+      const rotated = await refreshTokenRepository.rotate(stored.id, {
+        userId: user.id,
+        tokenHash: hashRefreshToken(refreshToken),
+        expiresAt: new Date(Date.now() + env.AUTH_REFRESH_TOKEN_TTL_SECONDS * 1000),
+      })
+      if (!rotated) {
         await refreshTokenRepository.revokeAllForUser(stored.userId)
         throw invalidRefreshTokenError()
       }
 
-      return issueTokenPair(user)
+      return {
+        accessToken,
+        tokenType: 'Bearer',
+        expiresIn: env.AUTH_ACCESS_TOKEN_TTL_SECONDS,
+        refreshToken,
+      }
     },
 
     async logout(input) {

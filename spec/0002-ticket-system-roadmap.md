@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned. This document is the foundational plan; every phase is delivered by its own module specifications before any code is written. Their file organization is defined in "Module specification organization" below.
+In progress. Phase 1 and Phase 2 are completed; Phase 3 remains planned. Module specifications are organized below.
 
 ## Background
 
@@ -31,10 +31,12 @@ The project baseline (0001) is complete. The product direction is now a small-sc
 
 ## Phase 1 — Authentication and user management
 
-Delivered by a dedicated module specification.
+Status: Completed.
 
-- Credential login and logout; passwords hashed with a verified algorithm (bcrypt or argon2).
-- Token strategy: JWT access + refresh tokens, or server sessions — decided in the Phase 1 module specification.
+Delivered by the specifications in `module-auth-users/`.
+
+- Credential login and logout; passwords hashed with Node.js async scrypt, as decided in `module-auth-users/login.md`.
+- JWT access and refresh tokens, as decided in `module-auth-users/login.md`.
 - User management (admin): create, update, list, enable/disable, reset password.
 - RBAC middleware enforcing route-level role checks for the three roles.
 - Login rate limiting against brute force.
@@ -42,7 +44,9 @@ Delivered by a dedicated module specification.
 
 ## Phase 2 — Ticket MVP
 
-Delivered by a dedicated module specification.
+Status: Completed.
+
+Delivered by the specifications in `module-tickets/`.
 
 Features:
 
@@ -55,19 +59,21 @@ Features:
 
 State machine — every transition is validated in the service layer; illegal transitions return a stable error code:
 
-| From          | To            | Trigger                 | Actor         |
-| ------------- | ------------- | ----------------------- | ------------- |
-| `pending`     | `in_progress` | Claim or assignment     | agent / admin |
-| `pending`     | `cancelled`   | Cancel                  | requester     |
-| `in_progress` | `resolved`    | Mark resolved           | agent / admin |
-| `in_progress` | `cancelled`   | Cancel (open decision)  | requester     |
-| `resolved`    | `closed`      | Confirm resolution      | requester     |
-| `resolved`    | `closed`      | Auto-close after N days | system        |
-| `resolved`    | `in_progress` | Reopen                  | requester     |
-| `closed`      | —             | Terminal state          | —             |
-| `cancelled`   | —             | Terminal state          | —             |
+| From          | To            | Trigger                           | Actor         |
+| ------------- | ------------- | --------------------------------- | ------------- |
+| `pending`     | `in_progress` | Claim or assignment               | agent / admin |
+| `pending`     | `cancelled`   | Cancel                            | requester     |
+| `in_progress` | `resolved`    | Mark resolved                     | agent / admin |
+| `in_progress` | `cancelled`   | Cancel                            | requester     |
+| `resolved`    | `closed`      | Confirm resolution                | requester     |
+| `resolved`    | `closed`      | Auto-close after N days (Phase 3) | system        |
+| `resolved`    | `in_progress` | Reopen                            | requester     |
+| `closed`      | —             | Terminal state                    | —             |
+| `cancelled`   | —             | Terminal state                    | —             |
 
 ## Phase 3 — Advanced features
+
+Status: Planned.
 
 Each item gets its own module specification when selected. Priority order:
 
@@ -100,12 +106,11 @@ Each item gets its own module specification when selected. Priority order:
 - The state machine must be tested for every legal transition and a representative set of illegal ones.
 - Comment visibility must be tested: requesters cannot read internal notes.
 
-## Open decisions
+## Decision status
 
-- JWT versus sessions for Phase 1 authentication.
-- Password hashing algorithm choice.
-- Whether requesters may cancel `in_progress` tickets.
-- The auto-close window N for resolved tickets.
+- Phase 1 chose JWT access and refresh tokens and Node.js async scrypt.
+- Phase 2 allows requesters to cancel `in_progress` tickets.
+- The auto-close window for resolved tickets remains a Phase 3 decision.
 - Phase ordering inside Phase 3 may change with product needs.
 
 ## Module specification organization

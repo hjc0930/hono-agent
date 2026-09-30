@@ -2,7 +2,7 @@ import { and, count, desc, eq, gte, ilike, lte, or } from 'drizzle-orm'
 
 import type { Database } from '../db/client.ts'
 import { getDatabase } from '../db/client.ts'
-import { tickets } from '../db/schema.ts'
+import { ticketEvents, tickets } from '../db/schema.ts'
 import type { TicketPriority, TicketStatus } from '../types.ts'
 
 export type NewTicket = {
@@ -55,6 +55,12 @@ export interface TicketRepository {
   findById(id: string): Promise<TicketRecord | null>
   insert(ticket: NewTicket): Promise<TicketRecord>
   update(id: string, patch: TicketPatch): Promise<TicketRecord | null>
+  updateWithEvent(
+    id: string,
+    expectedStatus: TicketStatus,
+    patch: TicketPatch & { status: TicketStatus },
+    actorId: string,
+  ): Promise<TicketRecord | null>
 }
 
 export class DrizzleTicketRepository implements TicketRepository {
@@ -119,5 +125,30 @@ export class DrizzleTicketRepository implements TicketRepository {
       .where(eq(tickets.id, id))
       .returning()
     return rows[0] ?? null
+  }
+
+  async updateWithEvent(
+    id: string,
+    expectedStatus: TicketStatus,
+    patch: TicketPatch & { status: TicketStatus },
+    actorId: string,
+  ): Promise<TicketRecord | null> {
+    return this.#loadDatabase().transaction(async (transaction) => {
+      const rows = await transaction
+        .update(tickets)
+        .set({ ...patch, updatedAt: new Date() })
+        .where(and(eq(tickets.id, id), eq(tickets.status, expectedStatus)))
+        .returning()
+      const updated = rows[0]
+      if (!updated) return null
+
+      await transaction.insert(ticketEvents).values({
+        ticketId: id,
+        actorId,
+        fromStatus: expectedStatus,
+        toStatus: patch.status,
+      })
+      return updated
+    })
   }
 }

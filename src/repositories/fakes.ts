@@ -130,6 +130,22 @@ export class MemoryRefreshTokenRepository implements RefreshTokenRepository {
     return record
   }
 
+  async rotate(id: string, replacement: NewRefreshToken): Promise<boolean> {
+    const token = this.#tokens.get(id)
+    if (!token || token.revokedAt !== null) return false
+
+    const previous = new Map(this.#tokens)
+    this.#tokens.set(id, { ...token, revokedAt: new Date() })
+    try {
+      await this.insert(replacement)
+    } catch (error) {
+      this.#tokens.clear()
+      for (const [key, value] of previous) this.#tokens.set(key, value)
+      throw error
+    }
+    return true
+  }
+
   async revoke(id: string): Promise<boolean> {
     const token = this.#tokens.get(id)
     if (!token || token.revokedAt !== null) return false
@@ -233,8 +249,13 @@ export class MemoryTicketCategoryRepository implements TicketCategoryRepository 
 
 export class MemoryTicketRepository implements TicketRepository {
   readonly #tickets = new Map<string, TicketRecord>()
+  readonly #eventRepository: TicketEventRepository
 
-  constructor(seed: TicketRecord[] = []) {
+  constructor(
+    seed: TicketRecord[] = [],
+    eventRepository: TicketEventRepository = new MemoryTicketEventRepository(),
+  ) {
+    this.#eventRepository = eventRepository
     for (const ticket of seed) this.#tickets.set(ticket.id, ticket)
   }
 
@@ -282,6 +303,25 @@ export class MemoryTicketRepository implements TicketRepository {
     const ticket = this.#tickets.get(id)
     if (!ticket) return null
     const updated: TicketRecord = { ...ticket, ...patch, updatedAt: new Date() }
+    this.#tickets.set(id, updated)
+    return updated
+  }
+
+  async updateWithEvent(
+    id: string,
+    expectedStatus: TicketRecord['status'],
+    patch: TicketPatch & { status: TicketRecord['status'] },
+    actorId: string,
+  ): Promise<TicketRecord | null> {
+    const ticket = this.#tickets.get(id)
+    if (!ticket || ticket.status !== expectedStatus) return null
+    const updated: TicketRecord = { ...ticket, ...patch, updatedAt: new Date() }
+    await this.#eventRepository.insert({
+      ticketId: id,
+      actorId,
+      fromStatus: expectedStatus,
+      toStatus: patch.status,
+    })
     this.#tickets.set(id, updated)
     return updated
   }

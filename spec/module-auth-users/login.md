@@ -4,7 +4,7 @@ Module: `module-auth-users` · Batch: Phase 1 · Related: `rbac.md`, `login-prot
 
 ## Status
 
-Draft — awaiting review. No implementation yet.
+Completed.
 
 ## Background
 
@@ -132,7 +132,7 @@ Logout has no side effects beyond revoking the presented token (no revoke-all; t
 2. Row not found → 401, no side effects.
 3. Row found and `revoked_at` is set → **reuse**: `revokeAllForUser(user_id)` (set `revoked_at = now()` on every active row of that user) → 401.
 4. Row found and `expires_at <= now()` → 401 (no side effects; a lazy cleanup job may delete expired rows later under a separate spec).
-5. Otherwise: in one transaction, `revoke(oldRow.id)` and `insert(newRow)` with a fresh random token and `expires_at = now() + AUTH_REFRESH_TOKEN_TTL_SECONDS`; sign a new access token; return the pair.
+5. Otherwise: sign a new access token and generate a fresh random refresh token, then call `rotate(oldRow.id, newRow)`. The repository conditionally revokes the active old row and inserts the replacement in one transaction; if insertion fails, the revocation rolls back. The new row has `expires_at = now() + AUTH_REFRESH_TOKEN_TTL_SECONDS`. Return the pair only after the transaction succeeds. A failed conditional revoke is treated as reuse.
 
 Because every row's `token_hash` is unique, this flow is race-safe for a single PostgreSQL instance without row locks; two concurrent refreshes with the same token collapse into one success and one reuse-revocation.
 
@@ -177,7 +177,7 @@ Request bodies stay flat (no `data` wrapper). Response shapes are governed entir
 ### D7. Test isolation — repository interfaces with injectable fakes
 
 - `UserRepository`: `findByUsername(username)`, `findById(id)`, `insert(newUser)`.
-- `RefreshTokenRepository`: `findByHash(hash)`, `insert(newToken)`, `revoke(id)`, `revokeAllForUser(userId)`.
+- `RefreshTokenRepository`: `findByHash(hash)`, `insert(newToken)`, `rotate(id, replacement)`, `revoke(id)`, `revokeAllForUser(userId)`. `rotate` owns both database writes in one transaction.
 - `createApp({ userRepository?, refreshTokenRepository? } = {})` defaults to the Drizzle implementations; tests pass in-memory fakes. Production startup uses the defaults; the composition root is the only place that touches Drizzle wiring.
 - Pure helpers (`hashPassword`, `verifyPassword`, `verifyAccessToken`) take primitives only, so they are tested without any fake.
 
@@ -254,13 +254,14 @@ Migration: first Drizzle migration (`pnpm run db:generate` after schema changes;
 
 ### Layout
 
-| File                           | Kind | Covers                                                |
-| ------------------------------ | ---- | ----------------------------------------------------- |
-| `src/lib/password.spec.ts`     | unit | hashing primitives, no fakes                          |
-| `src/lib/access-token.spec.ts` | unit | sign/verify, expiry, pinned algorithm                 |
-| `src/services/auth.spec.ts`    | unit | flows with fake repositories                          |
-| `src/routes/auth.spec.ts`      | unit | app.request()-level status/error-shape/OpenAPI checks |
-| `src/db/seed.spec.ts`          | unit | `validateSeedConfig` only (no database)               |
+| File                                     | Kind | Covers                                                         |
+| ---------------------------------------- | ---- | -------------------------------------------------------------- |
+| `src/lib/password.spec.ts`               | unit | hashing primitives, no fakes                                   |
+| `src/lib/access-token.spec.ts`           | unit | sign/verify, expiry, pinned algorithm                          |
+| `src/services/auth.spec.ts`              | unit | flows with fake repositories                                   |
+| `src/repositories/atomic-writes.spec.ts` | unit | in-memory PostgreSQL transaction rollback for refresh rotation |
+| `src/routes/auth.spec.ts`                | unit | app.request()-level status/error-shape/OpenAPI checks          |
+| `src/db/seed.spec.ts`                    | unit | `validateSeedConfig` only (no database)                        |
 
 ### Fakes and fixtures
 
@@ -287,7 +288,7 @@ Migration: first Drizzle migration (`pnpm run db:generate` after schema changes;
 
 Login: ① correct credentials → tokens issued + refresh row inserted; ② unknown user → 401 `AUTH_INVALID_CREDENTIALS`, and response body deep-equals the wrong-password case (modulo `date`); ③ wrong password → same; ④ disabled account with correct password → 403 `AUTH_ACCOUNT_DISABLED`; ⑤ disabled account with wrong password → 401 (not 403); ⑥ unknown user performs a dummy verification (fake repo counts `findByUsername` calls; assert the verify path still runs — via injectable clock/spy on the password module or by asserting identical timing-insensitive behavior).
 
-Refresh: ① valid → new pair, old row revoked, new row active; ② replayed old token → all user rows revoked + 401; ③ expired → 401, nothing revoked; ④ unknown → 401, nothing revoked; ⑤ concurrent-style: second refresh with the already-rotated token triggers the reuse branch (sequence of two calls).
+Refresh: ① valid → new pair, old row revoked, new row active; ② replayed old token → all user rows revoked + 401; ③ expired → 401, nothing revoked; ④ unknown → 401, nothing revoked; ⑤ concurrent refreshes: only one rotation succeeds and reuse detection revokes the replacement; ⑥ replacement insertion failure rolls back old-token revocation. An in-memory PostgreSQL test verifies rollback on a unique-constraint failure in the real Drizzle repository.
 
 Logout: ① valid bearer + valid refresh → row revoked, bare success envelope (no `data`); ② unknown refresh → 401 `AUTH_INVALID_REFRESH_TOKEN`, nothing else revoked; ③ already-revoked refresh → 401, no revoke-all.
 
@@ -306,6 +307,7 @@ Seed: ① missing password → error listed; ② short password → error; ③ b
 - `pnpm run db:seed` is idempotent, refuses a missing/weak `SEED_ADMIN_PASSWORD`, and never logs the password.
 - Startup fails fast when `JWT_SECRET` is missing or shorter than 32 characters; `.env.example` and the Vitest setup keep dev/tests working.
 - Login, refresh, and logout match the API contract, including byte-identical credential errors, rotation, and reuse-revocation.
+- Refresh-token revocation and replacement insertion commit or roll back together.
 - Every case-matrix row above exists as a passing test; all quality gates (format, lint, typecheck, unit tests, build) pass.
 
 ## Open questions

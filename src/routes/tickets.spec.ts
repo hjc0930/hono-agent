@@ -14,13 +14,14 @@ import {
 import { createApp } from '../main.ts'
 
 const buildApp = async () => {
-  const ticketRepository = new MemoryTicketRepository([
-    makeTicket({ id: 't-1', requesterId: 'requester-1', title: '登录失败' }),
-  ])
+  const ticketEventRepository = new MemoryTicketEventRepository()
+  const ticketRepository = new MemoryTicketRepository(
+    [makeTicket({ id: 't-1', requesterId: 'requester-1', title: '登录失败' })],
+    ticketEventRepository,
+  )
   const ticketCategoryRepository = new MemoryTicketCategoryRepository([
     makeTicketCategory({ id: 'cat-1', name: '账号问题', enabled: true }),
   ])
-  const ticketEventRepository = new MemoryTicketEventRepository()
   const ticketCommentRepository = new MemoryTicketCommentRepository()
   const userRepository = new MemoryUserRepository([
     makeUser({ id: 'agent-1', username: 'agent1', role: 'agent', status: 'active' }),
@@ -28,7 +29,6 @@ const buildApp = async () => {
   const app = createApp({
     ticketRepository,
     ticketCategoryRepository,
-    ticketEventRepository,
     ticketCommentRepository,
     userRepository,
   })

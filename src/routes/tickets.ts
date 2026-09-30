@@ -7,8 +7,6 @@ import { DrizzleTicketCategoryRepository } from '../repositories/ticket-category
 import type { TicketCategoryRepository } from '../repositories/ticket-category-repository.ts'
 import { DrizzleTicketCommentRepository } from '../repositories/ticket-comment-repository.ts'
 import type { TicketCommentRepository } from '../repositories/ticket-comment-repository.ts'
-import { DrizzleTicketEventRepository } from '../repositories/ticket-event-repository.ts'
-import type { TicketEventRepository } from '../repositories/ticket-event-repository.ts'
 import { DrizzleTicketRepository } from '../repositories/ticket-repository.ts'
 import type { TicketListFilter, TicketRepository } from '../repositories/ticket-repository.ts'
 import { DrizzleUserRepository } from '../repositories/user-repository.ts'
@@ -38,7 +36,6 @@ import {
 export type TicketRouteDependencies = {
   ticketRepository?: TicketRepository
   ticketCategoryRepository?: TicketCategoryRepository
-  ticketEventRepository?: TicketEventRepository
   ticketCommentRepository?: TicketCommentRepository
   userRepository?: UserRepository
 }
@@ -264,17 +261,14 @@ export const registerTicketRoutes = (
   const ticketRepository = dependencies.ticketRepository ?? new DrizzleTicketRepository()
   const ticketCategoryRepository =
     dependencies.ticketCategoryRepository ?? new DrizzleTicketCategoryRepository()
-  const ticketEventRepository =
-    dependencies.ticketEventRepository ?? new DrizzleTicketEventRepository()
   const ticketCommentRepository =
     dependencies.ticketCommentRepository ?? new DrizzleTicketCommentRepository()
   const userRepository = dependencies.userRepository ?? new DrizzleUserRepository()
 
   const ticketService = createTicketService({ ticketRepository, ticketCategoryRepository })
-  const stateMachine = createTicketStateMachine({ ticketRepository, ticketEventRepository })
+  const stateMachine = createTicketStateMachine({ ticketRepository })
   const assignmentService = createTicketAssignmentService({
     ticketRepository,
-    ticketEventRepository,
     userRepository,
   })
   const commentService = createTicketCommentService({ ticketRepository, ticketCommentRepository })

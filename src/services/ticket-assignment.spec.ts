@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   MemoryTicketEventRepository,
@@ -11,10 +11,11 @@ import { createTicketAssignmentService } from './ticket-assignment.ts'
 import type { ActorContext } from './ticket.ts'
 
 const setup = (ticketOverrides: Partial<ReturnType<typeof makeTicket>> = {}) => {
-  const ticketRepository = new MemoryTicketRepository([
-    makeTicket({ id: 't-1', ...ticketOverrides }),
-  ])
   const ticketEventRepository = new MemoryTicketEventRepository()
+  const ticketRepository = new MemoryTicketRepository(
+    [makeTicket({ id: 't-1', ...ticketOverrides })],
+    ticketEventRepository,
+  )
   const userRepository = new MemoryUserRepository([
     makeUser({ id: 'agent-1', username: 'agent1', role: 'agent', status: 'active' }),
     makeUser({ id: 'customer-1', username: 'customer', role: 'user', status: 'active' }),
@@ -22,10 +23,9 @@ const setup = (ticketOverrides: Partial<ReturnType<typeof makeTicket>> = {}) => 
   ])
   const service = createTicketAssignmentService({
     ticketRepository,
-    ticketEventRepository,
     userRepository,
   })
-  return { service, ticketEventRepository }
+  return { service, ticketRepository, ticketEventRepository }
 }
 
 const admin: ActorContext = { userId: 'admin-1', role: 'admin' }
@@ -48,6 +48,22 @@ describe('TicketAssignmentService.assign', () => {
     const events = await ticketEventRepository.listByTicket('t-1')
     expect(events).toHaveLength(1)
     expect(events[0]).toMatchObject({ fromStatus: 'pending', toStatus: 'in_progress' })
+  })
+
+  it('does not assign a pending ticket when its timeline event fails', async () => {
+    const { service, ticketRepository, ticketEventRepository } = setup({ status: 'pending' })
+    vi.spyOn(ticketEventRepository, 'insert').mockRejectedValueOnce(
+      new Error('event insert failed'),
+    )
+
+    await expect(
+      service.assign({ ticketId: 't-1', handlerId: 'agent-1', actor: admin }),
+    ).rejects.toThrow('event insert failed')
+    expect(await ticketRepository.findById('t-1')).toMatchObject({
+      status: 'pending',
+      handlerId: null,
+    })
+    expect(await ticketEventRepository.listByTicket('t-1')).toHaveLength(0)
   })
 
   it('reassigns an in_progress ticket without changing status', async () => {

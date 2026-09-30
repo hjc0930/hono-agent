@@ -22,6 +22,8 @@ export type RefreshTokenRecord = {
 export interface RefreshTokenRepository {
   findByHash(tokenHash: string): Promise<RefreshTokenRecord | null>
   insert(token: NewRefreshToken): Promise<RefreshTokenRecord>
+  /** Atomically revoke an active token and insert its replacement. */
+  rotate(id: string, replacement: NewRefreshToken): Promise<boolean>
   /** Marks the token revoked; returns false when it was already revoked. */
   revoke(id: string): Promise<boolean>
   revokeAllForUser(userId: string): Promise<void>
@@ -48,6 +50,20 @@ export class DrizzleRefreshTokenRepository implements RefreshTokenRepository {
     const inserted = rows[0]
     if (!inserted) throw new Error('refresh token insert returned no rows')
     return inserted
+  }
+
+  async rotate(id: string, replacement: NewRefreshToken): Promise<boolean> {
+    return this.#loadDatabase().transaction(async (transaction) => {
+      const revoked = await transaction
+        .update(refreshTokens)
+        .set({ revokedAt: new Date() })
+        .where(and(eq(refreshTokens.id, id), isNull(refreshTokens.revokedAt)))
+        .returning()
+      if (revoked.length === 0) return false
+
+      await transaction.insert(refreshTokens).values(replacement)
+      return true
+    })
   }
 
   // Conditional update: only an active row transitions, so concurrent refreshes

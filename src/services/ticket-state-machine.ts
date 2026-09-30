@@ -1,5 +1,4 @@
 import { forbiddenError, invalidStateTransitionError, ticketNotFoundError } from '../lib/errors.ts'
-import type { TicketEventRepository } from '../repositories/ticket-event-repository.ts'
 import type {
   TicketPatch,
   TicketRecord,
@@ -41,9 +40,8 @@ export type TicketStateMachine = {
 
 export const createTicketStateMachine = (dependencies: {
   ticketRepository: TicketRepository
-  ticketEventRepository: TicketEventRepository
 }): TicketStateMachine => {
-  const { ticketRepository, ticketEventRepository } = dependencies
+  const { ticketRepository } = dependencies
 
   return {
     async transition(input) {
@@ -59,15 +57,16 @@ export const createTicketStateMachine = (dependencies: {
       if (input.to === 'resolved') patch.resolvedAt = new Date()
       if (input.to === 'closed') patch.closedAt = new Date()
 
-      const updated = await ticketRepository.update(ticket.id, patch)
-      if (!updated) throw ticketNotFoundError()
-
-      await ticketEventRepository.insert({
-        ticketId: ticket.id,
-        actorId: input.actor.userId,
-        fromStatus: from,
-        toStatus: input.to,
-      })
+      const updated = await ticketRepository.updateWithEvent(
+        ticket.id,
+        from,
+        { ...patch, status: input.to },
+        input.actor.userId,
+      )
+      if (!updated) {
+        if (!(await ticketRepository.findById(ticket.id))) throw ticketNotFoundError()
+        throw invalidStateTransitionError()
+      }
 
       return toPublicTicket(updated)
     },

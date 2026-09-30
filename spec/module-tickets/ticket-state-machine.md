@@ -4,7 +4,7 @@ Module: `module-tickets` · Batch: Phase 2 · Related: `tickets-crud.md`, `ticke
 
 ## Status
 
-Draft — awaiting review. No implementation yet.
+Completed.
 
 ## Background
 
@@ -106,17 +106,17 @@ The `tickets` table gains no new columns beyond those in `tickets-crud.md` (`res
 
 ## Architecture mapping
 
-| Path                                                  | Responsibility                                              |
-| ----------------------------------------------------- | ----------------------------------------------------------- |
-| `src/routes/tickets.ts` (+ `.spec.ts`)                | `transition` route + OpenAPI                                |
-| `src/schemas/ticket.ts`                               | transition request/response schemas                         |
-| `src/services/ticket-state-machine.ts` (+ `.spec.ts`) | `ALLOWED_TRANSITIONS`, validation, timeline + status change |
-| `src/repositories/ticket-repository.ts`               | `transition` method (atomic status + event insert)          |
-| `src/db/schema.ts`                                    | `ticket_events` table                                       |
+| Path                                                  | Responsibility                                                                         |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `src/routes/tickets.ts` (+ `.spec.ts`)                | `transition` route + OpenAPI                                                           |
+| `src/schemas/ticket.ts`                               | transition request/response schemas                                                    |
+| `src/services/ticket-state-machine.ts` (+ `.spec.ts`) | `ALLOWED_TRANSITIONS`, validation, timeline + status change                            |
+| `src/repositories/ticket-repository.ts`               | `updateWithEvent` method (conditional status update + event insert in one transaction) |
+| `src/db/schema.ts`                                    | `ticket_events` table                                                                  |
 
 ## Testing strategy
 
-Colocated unit tests only. The state machine is tested exhaustively: every legal transition succeeds, every illegal transition (including both terminal states) returns `INVALID_STATE_TRANSITION`. Route tests cover role gating per transition and the timeline row being written.
+Colocated unit tests only. The state machine is tested exhaustively: every legal transition succeeds, every illegal transition (including both terminal states) returns `INVALID_STATE_TRANSITION`. Route tests cover role gating per transition and the timeline row being written. Service tests verify that event insertion failure leaves the ticket unchanged and a stale status update writes no event. An in-memory PostgreSQL test verifies transaction rollback on an event foreign-key failure and successful status/event commit in the real Drizzle repository. Assignment's `pending → in_progress` path uses the same atomic method.
 
 ## Acceptance criteria
 
@@ -124,6 +124,7 @@ Colocated unit tests only. The state machine is tested exhaustively: every legal
 - Terminal states reject all further transitions.
 - `resolved_at`/`closed_at` are set on their transitions.
 - Each transition writes exactly one immutable `ticket_events` row.
+- If the event insert fails, the ticket status update rolls back; a stale status cannot produce an event.
 - Quality gates pass.
 
 ## Open questions
