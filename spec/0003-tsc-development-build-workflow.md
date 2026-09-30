@@ -226,7 +226,7 @@ The final script names may differ if the implementation remains equally explicit
 - Delete `tsup.config.ts` after all required settings have been represented in TypeScript configuration.
 - Stop using `tsx` in the `dev` script.
 - Add `concurrently` as a development-only process manager.
-- Do not remove `tsx` from `devDependencies` while `db:migrate`, `db:seed`, or another retained script still requires it.
+- Do not remove `tsx` from `devDependencies` while `db:migrate` or another retained script still requires it.
 - A later migration may compile or otherwise replace those database-script entry points and then remove `tsx` completely.
 
 ## Error behavior

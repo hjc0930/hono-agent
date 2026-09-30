@@ -16,8 +16,7 @@
     "build": "pnpm run typecheck && tsdown",
     "start": "node --enable-source-maps dist/server.js",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/db/migrate.ts",
-    "db:seed": "tsx src/db/seed.ts"
+    "db:migrate": "tsx src/db/migrate.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.8",

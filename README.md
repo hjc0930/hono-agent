@@ -33,8 +33,24 @@ Do not commit `.env`. Local development uses embedded PGlite when `DATABASE_URL`
 | `AUTH_LOCKOUT_SECONDS`           | `900`         | Account lockout duration in seconds                    |
 | `AUTH_IP_FAILURE_LIMIT`          | `20`          | Per-IP failed-login threshold                          |
 | `AUTH_IP_WINDOW_SECONDS`         | `900`         | Per-IP failed-login window in seconds                  |
-| `SEED_ADMIN_USERNAME`            | `admin`       | Username used by `pnpm run db:seed`                    |
-| `SEED_ADMIN_PASSWORD`            | empty         | Initial admin password used by `pnpm run db:seed`      |
+
+## Database workflow
+
+Drizzle migrations under `drizzle/` are version-controlled project artifacts, not local environment files.
+
+When changing the database schema:
+
+1. Update `src/db/schema.ts`.
+2. Run `pnpm run db:generate`.
+3. Review the generated SQL under `drizzle/`.
+4. Run `pnpm run db:migrate` locally.
+5. Commit `src/db/schema.ts`, the generated migration, and its metadata together.
+
+Do not run `db:generate` during application startup, installation, CI builds, or deployment. New developers and deployment environments only run `pnpm run db:migrate` against the reviewed migrations already committed to the repository.
+
+Do not edit a migration that has already been shared or applied. Make the next schema change in `src/db/schema.ts` and generate a new migration instead.
+
+Local PGlite data is stored under `.data/pglite/` and must not be committed.
 
 ## Commands
 

@@ -16,7 +16,7 @@ First database-backed module of the ticket roadmap (0002, Phase 1). It introduce
 - Short-lived JWT access tokens plus opaque, revocable, rotating refresh tokens.
 - Password hashing with Node's built-in scrypt; no new runtime dependencies.
 - The `users` and `refresh_tokens` tables with the project's first Drizzle migration.
-- An idempotent seed script that creates the initial admin account.
+- An internal, idempotent bootstrap utility that creates the initial admin account.
 
 ## Non-goals
 
@@ -162,9 +162,9 @@ When `findByUsername` returns null, the service still runs `verifyPassword(passw
 
 Request bodies stay flat (no `data` wrapper). Response shapes are governed entirely by `common/api-response-comment.md`; this module only decides which optional fields each endpoint uses: login and refresh return `data`, logout returns none.
 
-### D6. Initial admin — seed script
+### D6. Initial admin — internal bootstrap utility
 
-`src/db/seed.ts`, run via new package script `pnpm run db:seed` (tsx). Behavior:
+`src/db/seed.ts` is retained as an internal utility and is intentionally not exposed as a package script. Behavior:
 
 1. Validate config with a pure, unit-testable `validateSeedConfig(env)` → `{ username, password }` or a listed error:
    - `SEED_ADMIN_PASSWORD` missing, or not 8–128 chars → error (refuse; never default the password).
@@ -190,8 +190,6 @@ Extended `envSchema` in `src/config/env.ts`:
 | `JWT_SECRET`                     | required, `z.string().min(32)` — startup fails fast  |
 | `AUTH_ACCESS_TOKEN_TTL_SECONDS`  | `z.coerce.number().int().positive().default(900)`    |
 | `AUTH_REFRESH_TOKEN_TTL_SECONDS` | `z.coerce.number().int().positive().default(604800)` |
-| `SEED_ADMIN_USERNAME`            | optional string, validated by the seed script        |
-| `SEED_ADMIN_PASSWORD`            | optional string, validated by the seed script        |
 
 Making `JWT_SECRET` required changes existing test/dev behavior; the same change adds it to `.env.example` (with generation hint `openssl rand -base64 48`) and sets it in the Vitest setup file so all existing suites remain hermetic.
 
@@ -304,7 +302,7 @@ Seed: ① missing password → error listed; ② short password → error; ③ b
 ## Acceptance criteria
 
 - First migration creates `users` and `refresh_tokens` with the enums, defaults, and indexes exactly as specified.
-- `pnpm run db:seed` is idempotent, refuses a missing/weak `SEED_ADMIN_PASSWORD`, and never logs the password.
+- The internal admin bootstrap utility is idempotent, refuses a missing/weak `SEED_ADMIN_PASSWORD`, and never logs the password.
 - Startup fails fast when `JWT_SECRET` is missing or shorter than 32 characters; `.env.example` and the Vitest setup keep dev/tests working.
 - Login, refresh, and logout match the API contract, including byte-identical credential errors, rotation, and reuse-revocation.
 - Refresh-token revocation and replacement insertion commit or roll back together.

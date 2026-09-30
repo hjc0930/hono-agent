@@ -18,8 +18,6 @@ const ENV_KEYS = [
   'AUTH_LOCKOUT_SECONDS',
   'AUTH_IP_FAILURE_LIMIT',
   'AUTH_IP_WINDOW_SECONDS',
-  'SEED_ADMIN_USERNAME',
-  'SEED_ADMIN_PASSWORD',
 ] as const satisfies readonly (keyof EnvType)[]
 
 type EnvKey = (typeof ENV_KEYS)[number]
@@ -59,8 +57,6 @@ describe('environment configuration', () => {
       AUTH_IP_WINDOW_SECONDS: 900,
     })
     expect(env.DATABASE_URL).toBeUndefined()
-    expect(env.SEED_ADMIN_USERNAME).toBeUndefined()
-    expect(env.SEED_ADMIN_PASSWORD).toBeUndefined()
     expect(corsOrigins).toEqual([])
   })
 
@@ -79,8 +75,6 @@ describe('environment configuration', () => {
       AUTH_LOCKOUT_SECONDS: '30',
       AUTH_IP_FAILURE_LIMIT: '10',
       AUTH_IP_WINDOW_SECONDS: '45',
-      SEED_ADMIN_USERNAME: 'admin',
-      SEED_ADMIN_PASSWORD: 'test-only-password',
     })
 
     expect(env).toMatchObject({
@@ -95,8 +89,6 @@ describe('environment configuration', () => {
       AUTH_LOCKOUT_SECONDS: 30,
       AUTH_IP_FAILURE_LIMIT: 10,
       AUTH_IP_WINDOW_SECONDS: 45,
-      SEED_ADMIN_USERNAME: 'admin',
-      SEED_ADMIN_PASSWORD: 'test-only-password',
     })
     expect(corsOrigins).toEqual(['http://example.com', 'http://localhost:3000'])
   })

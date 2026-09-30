@@ -46,6 +46,10 @@ The project requires Node.js 22.18+, 24.11+, or 26+, and pnpm. Run commands from
 
 - `pnpm run db:generate` — generate Drizzle artifacts after a schema change.
 - `pnpm run db:migrate` — apply a migration after it has been reviewed and created.
+- Run `pnpm run db:generate` only when intentionally changing `src/db/schema.ts`.
+- Review generated migration SQL before applying or committing it, and commit the schema change, migration SQL, and migration metadata together.
+- Do not generate migrations during setup, startup, CI, or deployment; those environments only run `pnpm run db:migrate` against committed migrations.
+- Do not edit a migration that has already been shared or applied; create a new migration for subsequent changes.
 
 ## Working Rules
 
