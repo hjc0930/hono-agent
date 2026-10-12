@@ -58,3 +58,6 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+      - name: Build web app
+        run: pnpm --filter hono-agent-webapp run build
