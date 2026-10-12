@@ -4,6 +4,8 @@ import { pathToFileURL } from 'node:url'
 import { app } from './main.ts'
 import { env } from './config/env.ts'
 import { logger } from './lib/logger.ts'
+import { registerGracefulShutdown } from './lib/shutdown.ts'
+import { closeDatabase } from './db/client.ts'
 
 type FetchHandler = Parameters<typeof createAdaptorServer>[0]['fetch']
 type NodeServer = ReturnType<typeof createAdaptorServer>
@@ -85,8 +87,16 @@ const isExecutedDirectly =
   process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href
 
 if (isExecutedDirectly) {
-  void startServer().catch((error: unknown) => {
-    logger.fatal({ error }, 'server failed to start')
-    process.exitCode = 1
-  })
+  void startServer()
+    .then((server) => {
+      registerGracefulShutdown(server, {
+        closeDatabase,
+        logger,
+        timeoutMs: env.SHUTDOWN_TIMEOUT_MS,
+      })
+    })
+    .catch((error: unknown) => {
+      logger.fatal({ error }, 'server failed to start')
+      process.exitCode = 1
+    })
 }

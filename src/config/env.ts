@@ -13,6 +13,7 @@ if (process.env.NODE_ENV !== 'test') {
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
+  SHUTDOWN_TIMEOUT_MS: z.coerce.number().int().min(1).max(2_147_483_647).default(10_000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   CORS_ORIGINS: z.string().default(''),
   DATABASE_URL: z.url().optional().or(z.literal('')),
