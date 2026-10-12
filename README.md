@@ -48,7 +48,11 @@ pnpm run test:e2e
 pnpm run test:watch
 pnpm run build
 pnpm start
+pnpm --filter hono-agent-webapp dev
+pnpm --filter hono-agent-webapp run build
 ```
+
+The React frontend lives in `webapp/` and is part of the pnpm workspace. Run the backend and frontend in separate terminals for local development.
 
 Unit tests use the `*.spec.ts` suffix and live beside the source they cover. The application E2E
 suite follows the NestJS directory convention at `test/app.e2e.spec.ts`.

@@ -1,3 +1,6 @@
+packages:
+  - webapp
+
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
