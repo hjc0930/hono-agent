@@ -17,17 +17,32 @@ export const databaseUrl = env.DATABASE_URL || undefined
 const PGLITE_DATA_DIR = '.data/pglite'
 
 let cachedDatabase: Database | undefined
+let closeClient: (() => Promise<void>) | undefined
+let closing: Promise<void> | undefined
 
 export const getDatabase = (): Database => {
+  if (closing) throw new Error('Database is shutting down')
   cachedDatabase ??= createDatabase()
   return cachedDatabase
 }
 
+export const closeDatabase = (): Promise<void> => {
+  closing ??= Promise.resolve().then(async () => {
+    await closeClient?.()
+    cachedDatabase = undefined
+  })
+  return closing
+}
+
 const createDatabase = (): Database => {
   if (databaseUrl) {
-    return drizzleNodePg(databaseUrl, { schema })
+    const database = drizzleNodePg(databaseUrl, { schema })
+    closeClient = () => database.$client.end()
+    return database
   }
   // PGlite does not create parent directories, so ensure the data dir exists first.
   mkdirSync(PGLITE_DATA_DIR, { recursive: true })
-  return drizzlePg(new PGlite(PGLITE_DATA_DIR), { schema })
+  const client = new PGlite(PGLITE_DATA_DIR)
+  closeClient = () => client.close()
+  return drizzlePg(client, { schema })
 }

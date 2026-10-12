@@ -7,6 +7,7 @@ const TEST_SECRET = 'vitest-only-secret-0123456789abcdef0123456789abcdef'
 const ENV_KEYS = [
   'NODE_ENV',
   'PORT',
+  'SHUTDOWN_TIMEOUT_MS',
   'LOG_LEVEL',
   'CORS_ORIGINS',
   'DATABASE_URL',
@@ -46,6 +47,7 @@ describe('environment configuration', () => {
     expect(env).toMatchObject({
       NODE_ENV: 'development',
       PORT: 3000,
+      SHUTDOWN_TIMEOUT_MS: 10_000,
       LOG_LEVEL: 'info',
       CORS_ORIGINS: '',
       JWT_SECRET: TEST_SECRET,
@@ -66,6 +68,7 @@ describe('environment configuration', () => {
     const { env, corsOrigins } = await loadEnv({
       NODE_ENV: 'test',
       PORT: '4000',
+      SHUTDOWN_TIMEOUT_MS: '2500',
       LOG_LEVEL: 'debug',
       CORS_ORIGINS: 'http://example.com, http://localhost:3000',
       DATABASE_URL: 'postgresql://localhost:5432/hono_agent',
@@ -83,6 +86,7 @@ describe('environment configuration', () => {
     expect(env).toMatchObject({
       NODE_ENV: 'test',
       PORT: 4000,
+      SHUTDOWN_TIMEOUT_MS: 2500,
       LOG_LEVEL: 'debug',
       DATABASE_URL: 'postgresql://localhost:5432/hono_agent',
       AUTH_ACCESS_TOKEN_TTL_SECONDS: 60,
@@ -100,4 +104,13 @@ describe('environment configuration', () => {
   it('rejects an invalid required JWT secret', async () => {
     await expect(loadEnv({ NODE_ENV: 'test', JWT_SECRET: 'too-short' })).rejects.toThrow()
   })
+
+  it.each(['0', '-1', '1.5', 'invalid', '2147483648'])(
+    'rejects invalid shutdown timeout %s',
+    async (value) => {
+      await expect(
+        loadEnv({ NODE_ENV: 'test', JWT_SECRET: TEST_SECRET, SHUTDOWN_TIMEOUT_MS: value }),
+      ).rejects.toThrow()
+    },
+  )
 })

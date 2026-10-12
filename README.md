@@ -22,6 +22,7 @@ Do not commit `.env`. Local development uses embedded PGlite when `DATABASE_URL`
 | -------------------------------- | ------------- | ------------------------------------------------------ |
 | `NODE_ENV`                       | `development` | `development`, `test`, or `production`                 |
 | `PORT`                           | `3000`        | HTTP server port                                       |
+| `SHUTDOWN_TIMEOUT_MS`            | `10000`       | Total graceful shutdown timeout in milliseconds        |
 | `LOG_LEVEL`                      | `info`        | Pino log level                                         |
 | `CORS_ORIGINS`                   | empty         | Comma-separated browser origins allowed for `/api/*`   |
 | `DATABASE_URL`                   | empty         | PostgreSQL URL; empty uses embedded PGlite locally     |
@@ -75,6 +76,18 @@ application: http://localhost:<port>
 swagger:     http://localhost:<port>/docs
 openApi:     http://localhost:<port>/openapi.json
 ```
+
+## Graceful shutdown
+
+The server handles `SIGINT` (Ctrl+C) and `SIGTERM` by stopping new HTTP
+connections, waiting for active requests, closing the initialized PostgreSQL pool
+or PGlite instance, and flushing logs. Repeated signals reuse the same shutdown.
+`SHUTDOWN_TIMEOUT_MS` bounds the entire process; timeout or cleanup failure exits
+with code 1. A successful shutdown exits naturally with code 0 unless a failure
+exit code was already set. Force-killing a process cannot run cleanup; a process
+manager must allow time for the signal handler to finish.
+
+See [the shutdown specification](./spec/common/graceful-shutdown.md).
 
 ## Project conventions
 

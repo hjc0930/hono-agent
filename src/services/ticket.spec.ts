@@ -12,8 +12,8 @@ import type { ActorContext } from './ticket.ts'
 const setup = () => {
   const ticketRepository = new MemoryTicketRepository()
   const ticketCategoryRepository = new MemoryTicketCategoryRepository([
-    makeTicketCategory({ id: 'cat-1', name: '账号问题', enabled: true }),
-    makeTicketCategory({ id: 'cat-disabled', name: '停用分类', enabled: false }),
+    makeTicketCategory({ id: 'cat-1', name: 'Account Issues', enabled: true }),
+    makeTicketCategory({ id: 'cat-disabled', name: 'Disabled Category', enabled: false }),
   ])
   const service = createTicketService({ ticketRepository, ticketCategoryRepository })
   return { service, ticketRepository }
@@ -37,7 +37,7 @@ describe('TicketService.create', () => {
   it('creates a pending ticket with the actor as requester', async () => {
     const { service } = setup()
     const ticket = await service.create(
-      { title: '登录失败', description: '无法登录', categoryId: 'cat-1' },
+      { title: 'Login Failed', description: 'Cannot log in', categoryId: 'cat-1' },
       userActor(),
     )
     expect(ticket).toMatchObject({ status: 'pending', requesterId: 'user-1', handlerId: null })

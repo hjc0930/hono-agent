@@ -6,40 +6,90 @@ import {
   successEnvelopeSchema,
 } from './envelope.ts'
 
-export const usernameSchema = z.string().regex(/^[a-z0-9_-]{3,32}$/)
+export const usernameSchema = z
+  .string()
+  .regex(/^[a-z0-9_-]{3,32}$/)
+  .openapi({
+    description: 'Login username: 3-32 lowercase letters, digits, underscores, or hyphens.',
+    example: 'demo_user',
+  })
 
 export const loginRequestSchema = z.object({
   username: usernameSchema,
-  password: z.string().min(8).max(128),
+  password: z.string().min(8).max(128).openapi({
+    description: 'Password of 8-128 characters. Request-only; never included in a response.',
+    writeOnly: true,
+  }),
 })
 
 export const publicUserSchema = z.object({
-  id: z.string(),
-  username: z.string(),
-  displayName: z.string().nullable(),
-  role: z.enum(['admin', 'agent', 'user']),
-  status: z.enum(['active', 'disabled']),
+  id: z.string().openapi({
+    description: 'Unique resource ID.',
+    example: '00000000-0000-4000-8000-000000000001',
+  }),
+  username: z.string().openapi({ description: 'Login username.', example: 'demo_user' }),
+  displayName: z.string().nullable().openapi({
+    description: 'User display name, independent of the login username. May be null.',
+    example: 'Example User',
+  }),
+  role: z.enum(['admin', 'agent', 'user']).openapi({
+    description: 'Role: admin (administrator), agent (support staff), or user (requester).',
+    example: 'user',
+  }),
+  status: z
+    .enum(['active', 'disabled'])
+    .openapi({ description: 'Account status: active (enabled) or disabled.', example: 'active' }),
 })
 
 export const loginDataSchema = z.object({
-  accessToken: z.string(),
-  tokenType: z.literal('Bearer'),
-  expiresIn: z.number().int().positive(),
-  refreshToken: z.string(),
-  user: publicUserSchema,
+  accessToken: z.string().openapi({
+    description: 'JWT access token for the Authorization: Bearer request header. Keep it private.',
+  }),
+  tokenType: z
+    .literal('Bearer')
+    .openapi({ description: 'Access token scheme; always Bearer.', example: 'Bearer' }),
+  expiresIn: z.number().int().positive().openapi({
+    description:
+      'Access token lifetime in seconds. Defaults to 900; use the value returned by this response.',
+    example: 900,
+  }),
+  refreshToken: z.string().openapi({
+    description:
+      'Refresh token. Replace it after each refresh. Request values contain exactly 43 base64url characters.',
+  }),
+  user: publicUserSchema.openapi({
+    description: 'Public details of the authenticated user, without a password or password hash.',
+  }),
 })
 
 export const loginResponseSchema = successEnvelopeSchema(loginDataSchema)
 
 export const refreshRequestSchema = z.object({
-  refreshToken: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+  refreshToken: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{43}$/)
+    .openapi({
+      description:
+        'Refresh token. Replace it after each refresh. Request values contain exactly 43 base64url characters.',
+    }),
 })
 
 export const refreshDataSchema = z.object({
-  accessToken: z.string(),
-  tokenType: z.literal('Bearer'),
-  expiresIn: z.number().int().positive(),
-  refreshToken: z.string(),
+  accessToken: z.string().openapi({
+    description: 'JWT access token for the Authorization: Bearer request header. Keep it private.',
+  }),
+  tokenType: z
+    .literal('Bearer')
+    .openapi({ description: 'Access token scheme; always Bearer.', example: 'Bearer' }),
+  expiresIn: z.number().int().positive().openapi({
+    description:
+      'Access token lifetime in seconds. Defaults to 900; use the value returned by this response.',
+    example: 900,
+  }),
+  refreshToken: z.string().openapi({
+    description:
+      'Refresh token. Replace it after each refresh. Request values contain exactly 43 base64url characters.',
+  }),
 })
 
 export const refreshResponseSchema = successEnvelopeSchema(refreshDataSchema)

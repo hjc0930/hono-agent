@@ -16,11 +16,11 @@ import { createApp } from '../main.ts'
 const buildApp = async () => {
   const ticketEventRepository = new MemoryTicketEventRepository()
   const ticketRepository = new MemoryTicketRepository(
-    [makeTicket({ id: 't-1', requesterId: 'requester-1', title: '登录失败' })],
+    [makeTicket({ id: 't-1', requesterId: 'requester-1', title: 'Login Failed' })],
     ticketEventRepository,
   )
   const ticketCategoryRepository = new MemoryTicketCategoryRepository([
-    makeTicketCategory({ id: 'cat-1', name: '账号问题', enabled: true }),
+    makeTicketCategory({ id: 'cat-1', name: 'Account Issues', enabled: true }),
   ])
   const ticketCommentRepository = new MemoryTicketCommentRepository()
   const userRepository = new MemoryUserRepository([
@@ -47,12 +47,16 @@ describe('POST /api/tickets', () => {
     const response = await app.request('/api/tickets', {
       method: 'POST',
       headers: { ...authed(requesterToken), ...jsonHeaders },
-      body: JSON.stringify({ title: '新工单', description: '描述', categoryId: 'cat-1' }),
+      body: JSON.stringify({
+        title: 'New Ticket',
+        description: 'Description',
+        categoryId: 'cat-1',
+      }),
     })
     const body = await response.json()
     expect(response.status).toBe(200)
     expect(body.data).toMatchObject({
-      title: '新工单',
+      title: 'New Ticket',
       status: 'pending',
       requesterId: 'requester-1',
     })
@@ -153,7 +157,7 @@ describe('ticket comments', () => {
     const post = await app.request('/api/tickets/t-1/comments', {
       method: 'POST',
       headers: { ...authed(agentToken), ...jsonHeaders },
-      body: JSON.stringify({ body: '内部备注', kind: 'internal' }),
+      body: JSON.stringify({ body: 'Internal note', kind: 'internal' }),
     })
     expect(post.status).toBe(200)
 

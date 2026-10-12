@@ -6,7 +6,7 @@ import { createApp } from '../main.ts'
 
 const buildApp = async () => {
   const ticketCategoryRepository = new MemoryTicketCategoryRepository([
-    makeTicketCategory({ name: '账号问题' }),
+    makeTicketCategory({ name: 'Account Issues' }),
   ])
   const app = createApp({ ticketCategoryRepository })
   const adminToken = await signAccessToken({ sub: 'admin-1', role: 'admin' })
@@ -29,7 +29,7 @@ describe('ticket category routes — authorization', () => {
     const response = await app.request('/api/ticket-categories', {
       method: 'POST',
       headers: { ...authed(userToken), ...jsonHeaders },
-      body: JSON.stringify({ name: '新分类' }),
+      body: JSON.stringify({ name: 'New Category' }),
     })
     expect(response.status).toBe(403)
   })
@@ -47,11 +47,11 @@ describe('POST /api/ticket-categories', () => {
     const response = await app.request('/api/ticket-categories', {
       method: 'POST',
       headers: { ...authed(adminToken), ...jsonHeaders },
-      body: JSON.stringify({ name: '设备故障' }),
+      body: JSON.stringify({ name: 'Hardware Failures' }),
     })
     const body = await response.json()
     expect(response.status).toBe(200)
-    expect(body.data).toMatchObject({ name: '设备故障', enabled: true })
+    expect(body.data).toMatchObject({ name: 'Hardware Failures', enabled: true })
   })
 
   it('rejects a duplicate name', async () => {
@@ -59,7 +59,7 @@ describe('POST /api/ticket-categories', () => {
     const response = await app.request('/api/ticket-categories', {
       method: 'POST',
       headers: { ...authed(adminToken), ...jsonHeaders },
-      body: JSON.stringify({ name: '账号问题' }),
+      body: JSON.stringify({ name: 'Account Issues' }),
     })
     expect(response.status).toBe(409)
     expect((await response.json()).code).toBe('CATEGORY_NAME_TAKEN')
@@ -79,13 +79,17 @@ describe('GET /api/ticket-categories', () => {
   })
 
   it.each([
-    ['true', true, '账号问题'],
-    ['false', false, '停用分类'],
-    ['1', true, '账号问题'],
-    ['0', false, '停用分类'],
+    ['true', true, 'Account Issues'],
+    ['false', false, 'Disabled Category'],
+    ['1', true, 'Account Issues'],
+    ['0', false, 'Disabled Category'],
   ] as const)('filters categories when enabled=%s', async (enabled, expectedEnabled, name) => {
     const { app, adminToken, ticketCategoryRepository } = await buildApp()
-    await ticketCategoryRepository.insert({ name: '停用分类', description: null, enabled: false })
+    await ticketCategoryRepository.insert({
+      name: 'Disabled Category',
+      description: null,
+      enabled: false,
+    })
 
     const response = await app.request(`/api/ticket-categories?enabled=${enabled}`, {
       headers: authed(adminToken),
@@ -112,7 +116,7 @@ describe('GET /api/ticket-categories', () => {
 describe('GET /api/ticket-categories/:id', () => {
   it('returns a category or 404', async () => {
     const { app, adminToken, ticketCategoryRepository } = await buildApp()
-    const existing = await ticketCategoryRepository.findByName('账号问题')
+    const existing = await ticketCategoryRepository.findByName('Account Issues')
     const found = await app.request(`/api/ticket-categories/${existing!.id}`, {
       headers: authed(adminToken),
     })
@@ -129,15 +133,18 @@ describe('GET /api/ticket-categories/:id', () => {
 describe('PATCH /api/ticket-categories/:id', () => {
   it('updates a category and rejects an empty body', async () => {
     const { app, adminToken, ticketCategoryRepository } = await buildApp()
-    const existing = await ticketCategoryRepository.findByName('账号问题')
+    const existing = await ticketCategoryRepository.findByName('Account Issues')
 
     const update = await app.request(`/api/ticket-categories/${existing!.id}`, {
       method: 'PATCH',
       headers: { ...authed(adminToken), ...jsonHeaders },
-      body: JSON.stringify({ enabled: false, description: '登录相关' }),
+      body: JSON.stringify({ enabled: false, description: 'Login-related issues' }),
     })
     expect(update.status).toBe(200)
-    expect((await update.json()).data).toMatchObject({ enabled: false, description: '登录相关' })
+    expect((await update.json()).data).toMatchObject({
+      enabled: false,
+      description: 'Login-related issues',
+    })
 
     const empty = await app.request(`/api/ticket-categories/${existing!.id}`, {
       method: 'PATCH',

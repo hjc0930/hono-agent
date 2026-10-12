@@ -36,16 +36,25 @@ describe('TicketCommentService.addComment', () => {
     const { service } = setup()
     const comment = await service.addComment({
       ticketId: 't-1',
-      body: '请补充截图',
+      body: 'Please provide a screenshot',
       actor: user(),
     })
-    expect(comment).toMatchObject({ body: '请补充截图', kind: 'public', authorId: 'requester-1' })
+    expect(comment).toMatchObject({
+      body: 'Please provide a screenshot',
+      kind: 'public',
+      authorId: 'requester-1',
+    })
   })
 
   it('rejects a requester posting an internal note', async () => {
     const { service } = setup()
     const result = await errorFields(() =>
-      service.addComment({ ticketId: 't-1', body: '内部', kind: 'internal', actor: user() }),
+      service.addComment({
+        ticketId: 't-1',
+        body: 'Internal note',
+        kind: 'internal',
+        actor: user(),
+      }),
     )
     expect(result).toEqual({ status: 403, code: 'FORBIDDEN' })
   })
@@ -54,7 +63,7 @@ describe('TicketCommentService.addComment', () => {
     const { service } = setup()
     const comment = await service.addComment({
       ticketId: 't-1',
-      body: '内部排查中',
+      body: 'Internal investigation in progress',
       kind: 'internal',
       actor: agent(),
     })
@@ -76,8 +85,8 @@ describe('TicketCommentService.listComments visibility', () => {
       makeTicket({ id: 't-1', requesterId: 'requester-1' }),
     ])
     const ticketCommentRepository = new MemoryTicketCommentRepository([
-      makeTicketComment({ ticketId: 't-1', kind: 'public', body: '对外' }),
-      makeTicketComment({ ticketId: 't-1', kind: 'internal', body: '内部' }),
+      makeTicketComment({ ticketId: 't-1', kind: 'public', body: 'Public reply' }),
+      makeTicketComment({ ticketId: 't-1', kind: 'internal', body: 'Internal note' }),
     ])
     const service = createTicketCommentService({ ticketRepository, ticketCommentRepository })
 

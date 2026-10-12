@@ -8,7 +8,7 @@ Completed.
 
 ## Background
 
-Tickets are organized by category (for example "账号问题", "设备故障", "软件咨询"). This spec defines the category entity and its admin-managed CRUD surface. It is the first module of Phase 2 and establishes the `ticket_categories` table that `tickets-crud.md` will reference. Categories are deliberately simple and independent so they can be delivered first and settle the ticket-domain conventions.
+Tickets are organized by category (for example "Account Issues", "Hardware Failures", "Software Questions"). This spec defines the category entity and its admin-managed CRUD surface. It is the first module of Phase 2 and establishes the `ticket_categories` table that `tickets-crud.md` will reference. Categories are deliberately simple and independent so they can be delivered first and settle the ticket-domain conventions.
 
 ## Goals
 
@@ -45,8 +45,8 @@ The public category object:
 ```json
 {
   "id": "uuid",
-  "name": "账号问题",
-  "description": "登录、密码、权限相关",
+  "name": "Account Issues",
+  "description": "Login, password, and permission issues",
   "enabled": true
 }
 ```

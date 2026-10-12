@@ -36,33 +36,44 @@ const loginRoute = createRoute({
   security: [],
   tags: ['Auth'],
   summary: 'Log in with username and password',
+  description:
+    'Public endpoint; no access token is required. Valid credentials return user details and an access/refresh token pair. Usernames contain 3-32 lowercase letters, digits, underscores, or hyphens; passwords contain 8-128 characters. Unknown usernames and incorrect passwords both return AUTH_INVALID_CREDENTIALS. Defaults: 5 consecutive failures lock an account for 900 seconds; 20 failures from one IP within 900 seconds trigger throttling. Limits are configurable and block subsequent attempts after the threshold is reached. A successful login clears the account failure count; IP failures remain until the window expires.',
   request: {
     body: { content: { 'application/json': { schema: loginRequestSchema } }, required: true },
   },
   responses: {
     200: {
       content: { 'application/json': { schema: loginResponseSchema } },
-      description: 'Token pair issued',
+      description: 'OK: data contains the authenticated user and token pair.',
     },
     400: {
       content: { 'application/json': { schema: authFailureResponseSchema } },
-      description: 'Validation failed',
+      description:
+        'VALIDATION_ERROR: request fields violate their constraints; see errors.message for details.',
     },
     401: {
       content: { 'application/json': { schema: authFailureResponseSchema } },
-      description: 'Invalid credentials',
+      description:
+        'AUTH_INVALID_CREDENTIALS: unknown username or incorrect password; the response does not distinguish them.',
     },
     403: {
       content: { 'application/json': { schema: authFailureResponseSchema } },
-      description: 'Account is disabled',
+      description: 'AUTH_ACCOUNT_DISABLED: credentials are correct, but the account is disabled.',
     },
     423: {
       content: { 'application/json': { schema: authFailureResponseSchema } },
-      description: 'Account is locked',
+      description:
+        'AUTH_ACCOUNT_LOCKED: consecutive login failures have temporarily locked the account.',
     },
     429: {
       content: { 'application/json': { schema: authFailureResponseSchema } },
-      description: 'Rate limited',
+      description:
+        'AUTH_RATE_LIMITED: the source IP has reached its failure limit within the configured window.',
+    },
+    500: {
+      content: { 'application/json': { schema: authFailureResponseSchema } },
+      description:
+        'INTERNAL_ERROR: unexpected server failure. Use the x-request-id response header when requesting support.',
     },
   },
 })
@@ -73,22 +84,31 @@ const refreshRoute = createRoute({
   operationId: 'refresh',
   security: [],
   tags: ['Auth'],
-  summary: 'Rotate the refresh token and mint a new access token',
+  summary: 'Refresh and rotate tokens',
+  description:
+    'Public endpoint. Submit refreshToken in the JSON body; no Bearer access token is required. Success returns a new token pair and immediately invalidates the old refresh token. Store the replacement pair. Unknown, expired, or revoked tokens and disabled accounts return AUTH_INVALID_REFRESH_TOKEN. Reusing a rotated or revoked token also revokes all refresh tokens for that user.',
   request: {
     body: { content: { 'application/json': { schema: refreshRequestSchema } }, required: true },
   },
   responses: {
     200: {
       content: { 'application/json': { schema: refreshResponseSchema } },
-      description: 'New token pair issued',
+      description: 'OK: data contains the replacement token pair. Replace the stored tokens.',
     },
     400: {
       content: { 'application/json': { schema: authFailureResponseSchema } },
-      description: 'Validation failed',
+      description:
+        'VALIDATION_ERROR: request fields violate their constraints; see errors.message for details.',
     },
     401: {
       content: { 'application/json': { schema: authFailureResponseSchema } },
-      description: 'Invalid refresh token',
+      description:
+        'AUTH_INVALID_REFRESH_TOKEN: unknown, expired, or revoked refresh token, or unavailable account. Token reuse revokes all refresh tokens for that user.',
+    },
+    500: {
+      content: { 'application/json': { schema: authFailureResponseSchema } },
+      description:
+        'INTERNAL_ERROR: unexpected server failure. Use the x-request-id response header when requesting support.',
     },
   },
 })
@@ -100,22 +120,31 @@ const logoutRoute = createRoute({
   security: [{ bearerAuth: [] }],
   middleware: [requireAuth],
   tags: ['Auth'],
-  summary: 'Revoke the presented refresh token',
+  summary: 'Log out and revoke a refresh token',
+  description:
+    'Requires a valid Bearer access token and the refreshToken to revoke in the JSON body. Success returns the envelope without data. Only the submitted refresh token is revoked; access tokens remain valid until expiry. Unknown or already revoked refresh tokens return AUTH_INVALID_REFRESH_TOKEN.',
   request: {
     body: { content: { 'application/json': { schema: refreshRequestSchema } }, required: true },
   },
   responses: {
     200: {
       content: { 'application/json': { schema: logoutResponseSchema } },
-      description: 'Refresh token revoked',
+      description: 'OK: the refresh token was revoked. The response omits data.',
     },
     400: {
       content: { 'application/json': { schema: authFailureResponseSchema } },
-      description: 'Validation failed',
+      description:
+        'VALIDATION_ERROR: request fields violate their constraints; see errors.message for details.',
     },
     401: {
       content: { 'application/json': { schema: authFailureResponseSchema } },
-      description: 'Authentication required',
+      description:
+        'UNAUTHORIZED: invalid access token; or AUTH_INVALID_REFRESH_TOKEN: unknown or already revoked refresh token.',
+    },
+    500: {
+      content: { 'application/json': { schema: authFailureResponseSchema } },
+      description:
+        'INTERNAL_ERROR: unexpected server failure. Use the x-request-id response header when requesting support.',
     },
   },
 })
@@ -127,19 +156,27 @@ const meRoute = createRoute({
   security: [{ bearerAuth: [] }],
   middleware: [requireAuth],
   tags: ['Auth'],
-  summary: 'Return the current user from a fresh repository read',
+  summary: 'Get the current user',
+  description:
+    'Available to every authenticated role. Re-reads the account identified by the access token and returns its current username, display name, role, and status without a password hash. A missing account returns UNAUTHORIZED; a disabled account returns AUTH_ACCOUNT_DISABLED. Use this endpoint to restore frontend session information.',
   responses: {
     200: {
       content: { 'application/json': { schema: meResponseSchema } },
-      description: 'Current user',
+      description: 'OK: data contains freshly loaded public details for the current user.',
     },
     401: {
       content: { 'application/json': { schema: authFailureResponseSchema } },
-      description: 'Authentication required',
+      description:
+        'UNAUTHORIZED: invalid access token or the account referenced by the token no longer exists.',
     },
     403: {
       content: { 'application/json': { schema: authFailureResponseSchema } },
-      description: 'Account is disabled',
+      description: 'AUTH_ACCOUNT_DISABLED: the current account is disabled.',
+    },
+    500: {
+      content: { 'application/json': { schema: authFailureResponseSchema } },
+      description:
+        'INTERNAL_ERROR: unexpected server failure. Use the x-request-id response header when requesting support.',
     },
   },
 })

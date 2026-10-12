@@ -22,14 +22,14 @@ const errorFields = async (run: () => Promise<unknown>) => {
 describe('TicketCategoryService.create', () => {
   it('creates an enabled category', async () => {
     const { service } = setup()
-    const category = await service.create({ name: '账号问题' })
-    expect(category).toMatchObject({ name: '账号问题', enabled: true, description: null })
+    const category = await service.create({ name: 'Account Issues' })
+    expect(category).toMatchObject({ name: 'Account Issues', enabled: true, description: null })
   })
 
   it('rejects a duplicate name', async () => {
     const { service } = setup()
-    await service.create({ name: '账号问题' })
-    const result = await errorFields(() => service.create({ name: '账号问题' }))
+    await service.create({ name: 'Account Issues' })
+    const result = await errorFields(() => service.create({ name: 'Account Issues' }))
     expect(result).toEqual({ status: 409, code: 'CATEGORY_NAME_TAKEN' })
   })
 })
@@ -37,9 +37,9 @@ describe('TicketCategoryService.create', () => {
 describe('TicketCategoryService.list', () => {
   it('filters by enabled and keyword', async () => {
     const repo = new MemoryTicketCategoryRepository([
-      makeTicketCategory({ name: '账号问题', enabled: true }),
-      makeTicketCategory({ name: '设备故障', enabled: true }),
-      makeTicketCategory({ name: '软件咨询', enabled: false }),
+      makeTicketCategory({ name: 'Account Issues', enabled: true }),
+      makeTicketCategory({ name: 'Hardware Failures', enabled: true }),
+      makeTicketCategory({ name: 'Software Questions', enabled: false }),
     ])
     const service = createTicketCategoryService({ ticketCategoryRepository: repo })
 
@@ -49,17 +49,17 @@ describe('TicketCategoryService.list', () => {
     const enabledOnly = await service.list({ page: 1, pageSize: 20, enabled: true })
     expect(enabledOnly.total).toBe(2)
 
-    const keyword = await service.list({ page: 1, pageSize: 20, keyword: '账号' })
+    const keyword = await service.list({ page: 1, pageSize: 20, keyword: 'Account' })
     expect(keyword.total).toBe(1)
-    expect(keyword.items[0]?.name).toBe('账号问题')
+    expect(keyword.items[0]?.name).toBe('Account Issues')
   })
 })
 
 describe('TicketCategoryService.get', () => {
   it('returns a category or throws not found', async () => {
     const { service } = setup()
-    const created = await service.create({ name: '账号问题' })
-    await expect(service.get(created.id)).resolves.toMatchObject({ name: '账号问题' })
+    const created = await service.create({ name: 'Account Issues' })
+    await expect(service.get(created.id)).resolves.toMatchObject({ name: 'Account Issues' })
 
     const result = await errorFields(() => service.get('missing'))
     expect(result).toEqual({ status: 404, code: 'CATEGORY_NOT_FOUND' })
@@ -69,30 +69,34 @@ describe('TicketCategoryService.get', () => {
 describe('TicketCategoryService.update', () => {
   it('updates name, description, and enabled', async () => {
     const { service } = setup()
-    const created = await service.create({ name: '账号问题' })
+    const created = await service.create({ name: 'Account Issues' })
 
     const updated = await service.update(created.id, {
-      name: '登录问题',
-      description: '登录相关',
+      name: 'Login Issues',
+      description: 'Login-related issues',
       enabled: false,
     })
-    expect(updated).toMatchObject({ name: '登录问题', description: '登录相关', enabled: false })
+    expect(updated).toMatchObject({
+      name: 'Login Issues',
+      description: 'Login-related issues',
+      enabled: false,
+    })
   })
 
   it('rejects renaming to another category name', async () => {
     const { service } = setup()
-    await service.create({ name: '账号问题' })
-    const second = await service.create({ name: '设备故障' })
+    await service.create({ name: 'Account Issues' })
+    const second = await service.create({ name: 'Hardware Failures' })
 
-    const result = await errorFields(() => service.update(second.id, { name: '账号问题' }))
+    const result = await errorFields(() => service.update(second.id, { name: 'Account Issues' }))
     expect(result).toEqual({ status: 409, code: 'CATEGORY_NAME_TAKEN' })
   })
 
   it('allows keeping the same name (no-op rename)', async () => {
     const { service } = setup()
-    const created = await service.create({ name: '账号问题' })
-    const updated = await service.update(created.id, { name: '账号问题' })
-    expect(updated.name).toBe('账号问题')
+    const created = await service.create({ name: 'Account Issues' })
+    const updated = await service.update(created.id, { name: 'Account Issues' })
+    expect(updated.name).toBe('Account Issues')
   })
 
   it('throws not found for a missing id', async () => {

@@ -373,7 +373,7 @@ export const makeTicketCategory = (
   overrides: TicketCategoryOverrides = {},
 ): TicketCategoryRecord => ({
   id: overrides.id ?? randomUUID(),
-  name: overrides.name ?? '账号问题',
+  name: overrides.name ?? 'Account Issues',
   description: overrides.description ?? null,
   enabled: overrides.enabled ?? true,
   createdAt: new Date(),
@@ -386,8 +386,8 @@ type TicketOverrides = Partial<
 
 export const makeTicket = (overrides: TicketOverrides = {}): TicketRecord => ({
   id: overrides.id ?? randomUUID(),
-  title: overrides.title ?? '登录失败',
-  description: overrides.description ?? '用户无法登录',
+  title: overrides.title ?? 'Login Failed',
+  description: overrides.description ?? 'The user cannot log in',
   categoryId: overrides.categoryId ?? randomUUID(),
   priority: overrides.priority ?? 'medium',
   status: overrides.status ?? 'pending',
@@ -405,7 +405,7 @@ export const makeTicketComment = (overrides: TicketCommentOverrides = {}): Ticke
   id: overrides.id ?? randomUUID(),
   ticketId: overrides.ticketId ?? randomUUID(),
   authorId: overrides.authorId ?? randomUUID(),
-  body: overrides.body ?? '请提供更多信息',
+  body: overrides.body ?? 'Please provide more information',
   kind: overrides.kind ?? 'public',
   createdAt: new Date(),
 })
