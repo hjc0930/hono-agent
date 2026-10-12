@@ -26,7 +26,12 @@ export type TicketCategoryRouteDependencies = {
 }
 
 const adminGuard = [requireAuth, requireRole('admin')]
-const idParamSchema = z.object({ id: z.string().min(1) })
+const idParamSchema = z.object({
+  id: z.string().min(1).openapi({
+    description: 'Target category ID, as returned by a category creation or query operation.',
+    example: '00000000-0000-4000-8000-000000000001',
+  }),
+})
 
 const createCategoryRoute = createRoute({
   method: 'post',
@@ -36,6 +41,8 @@ const createCategoryRoute = createRoute({
   middleware: adminGuard,
   tags: ['Ticket Categories'],
   summary: 'Create a ticket category (admin)',
+  description:
+    'Requires admin. The name must be unique and contain 1-64 characters after trimming. description is optional and stored as null when omitted. New categories are enabled by default. Returns the created category.',
   request: {
     body: {
       content: { 'application/json': { schema: createTicketCategoryRequestSchema } },
@@ -45,15 +52,31 @@ const createCategoryRoute = createRoute({
   responses: {
     200: {
       content: { 'application/json': { schema: ticketCategoryResponseSchema } },
-      description: 'Category created',
+      description: 'OK: data contains the created category with enabled=true.',
     },
     400: {
       content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
-      description: 'Validation failed',
+      description:
+        'VALIDATION_ERROR: request fields violate their constraints; see errors.message for details.',
     },
     409: {
       content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
-      description: 'Name taken',
+      description: 'CATEGORY_NAME_TAKEN: the category name is already in use.',
+    },
+    500: {
+      content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
+      description:
+        'INTERNAL_ERROR: unexpected server failure. Use the x-request-id response header when requesting support.',
+    },
+    401: {
+      content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
+      description:
+        'UNAUTHORIZED: missing Bearer access token, invalid token format or signature, or expired token.',
+    },
+    403: {
+      content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
+      description:
+        'FORBIDDEN: the current role cannot perform this operation or access the target resource.',
     },
   },
 })
@@ -65,45 +88,81 @@ const listCategoriesRoute = createRoute({
   security: [{ bearerAuth: [] }],
   middleware: [requireAuth],
   tags: ['Ticket Categories'],
-  summary: 'List ticket categories',
+  summary: 'List ticket categories with pagination',
+  description:
+    'Available to every authenticated role. Results are ordered by creation time ascending. Omitting enabled includes both enabled and disabled categories. Supports enabled filtering and a case-insensitive keyword search across name and description. data contains the category array and meta contains pagination details.',
   request: { query: ticketCategoryListQuerySchema },
   responses: {
     200: {
       content: { 'application/json': { schema: ticketCategoryListResponseSchema } },
-      description: 'Paginated categories',
+      description: 'OK: data contains the category array and meta contains pagination details.',
+    },
+    500: {
+      content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
+      description:
+        'INTERNAL_ERROR: unexpected server failure. Use the x-request-id response header when requesting support.',
+    },
+    400: {
+      content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
+      description:
+        'VALIDATION_ERROR: request fields violate their constraints; see errors.message for details.',
+    },
+    401: {
+      content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
+      description:
+        'UNAUTHORIZED: missing Bearer access token, invalid token format or signature, or expired token.',
     },
   },
 })
 
 const getCategoryRoute = createRoute({
   method: 'get',
-  path: '/api/ticket-categories/:id',
+  path: '/api/ticket-categories/{id}',
   operationId: 'getTicketCategory',
   security: [{ bearerAuth: [] }],
   middleware: [requireAuth],
   tags: ['Ticket Categories'],
-  summary: 'Read one ticket category',
+  summary: 'Get ticket category details',
+  description:
+    'Available to every authenticated role. Returns the category name, description, and enabled flag by ID. Disabled categories remain readable. A missing category returns CATEGORY_NOT_FOUND.',
   request: { params: idParamSchema },
   responses: {
     200: {
       content: { 'application/json': { schema: ticketCategoryResponseSchema } },
-      description: 'Category',
+      description: 'OK: data contains the requested category.',
     },
     404: {
       content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
-      description: 'Not found',
+      description: 'CATEGORY_NOT_FOUND: the category does not exist.',
+    },
+    500: {
+      content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
+      description:
+        'INTERNAL_ERROR: unexpected server failure. Use the x-request-id response header when requesting support.',
+    },
+    400: {
+      content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
+      description:
+        'VALIDATION_ERROR: request fields violate their constraints; see errors.message for details.',
+    },
+    401: {
+      content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
+      description:
+        'UNAUTHORIZED: missing Bearer access token, invalid token format or signature, or expired token.',
     },
   },
 })
 
 const updateCategoryRoute = createRoute({
   method: 'patch',
-  path: '/api/ticket-categories/:id',
+  path: '/api/ticket-categories/{id}',
   operationId: 'updateTicketCategory',
   security: [{ bearerAuth: [] }],
   middleware: adminGuard,
   tags: ['Ticket Categories'],
-  summary: 'Update a ticket category (admin)',
+  summary: 'Update or disable a ticket category (admin)',
+  description:
+    'Requires admin. Partially updates name, description, or enabled; at least one defined field is required. Omitted fields remain unchanged and description=null clears the description. Names must be unique. Disabled categories cannot be used for new tickets; existing tickets retain their category reference. There is no physical deletion endpoint.',
   request: {
     params: idParamSchema,
     body: {
@@ -114,19 +173,35 @@ const updateCategoryRoute = createRoute({
   responses: {
     200: {
       content: { 'application/json': { schema: ticketCategoryResponseSchema } },
-      description: 'Updated category',
+      description: 'OK: data contains the updated category.',
     },
     400: {
       content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
-      description: 'Validation failed',
+      description:
+        'VALIDATION_ERROR: request fields violate their constraints; see errors.message for details.',
     },
     404: {
       content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
-      description: 'Not found',
+      description: 'CATEGORY_NOT_FOUND: the category does not exist.',
     },
     409: {
       content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
-      description: 'Name taken',
+      description: 'CATEGORY_NAME_TAKEN: another category already uses the requested name.',
+    },
+    500: {
+      content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
+      description:
+        'INTERNAL_ERROR: unexpected server failure. Use the x-request-id response header when requesting support.',
+    },
+    401: {
+      content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
+      description:
+        'UNAUTHORIZED: missing Bearer access token, invalid token format or signature, or expired token.',
+    },
+    403: {
+      content: { 'application/json': { schema: ticketCategoryFailureResponseSchema } },
+      description:
+        'FORBIDDEN: the current role cannot perform this operation or access the target resource.',
     },
   },
 })

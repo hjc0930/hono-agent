@@ -204,6 +204,7 @@ describe('OpenAPI integration', () => {
       type: 'http',
       scheme: 'bearer',
       bearerFormat: 'JWT',
+      description: expect.stringContaining('Authorize'),
     })
     expect(doc.paths['/api/auth/me'].get.security).toEqual([{ bearerAuth: [] }])
     expect(doc.paths['/api/auth/login'].post.security).toEqual([])

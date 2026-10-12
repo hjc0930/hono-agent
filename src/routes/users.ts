@@ -25,7 +25,12 @@ export type UserRouteDependencies = {
 
 const adminGuard = [requireAuth, requireRole('admin')]
 
-const idParamSchema = z.object({ id: z.string().min(1) })
+const idParamSchema = z.object({
+  id: z.string().min(1).openapi({
+    description: 'Target user ID, as returned by a user creation or query operation.',
+    example: '00000000-0000-4000-8000-000000000001',
+  }),
+})
 
 const createUserRoute = createRoute({
   method: 'post',
@@ -35,21 +40,39 @@ const createUserRoute = createRoute({
   middleware: adminGuard,
   tags: ['Users'],
   summary: 'Create a user (admin)',
+  description:
+    'Requires admin. The username must be unique and cannot be changed after creation. role defaults to user and the initial status is always active. Omitting displayName stores null. Returns public account details without a password or password hash.',
   request: {
     body: { content: { 'application/json': { schema: createUserRequestSchema } }, required: true },
   },
   responses: {
     200: {
       content: { 'application/json': { schema: userResponseSchema } },
-      description: 'User created',
+      description: 'OK: data contains the created public user with status active.',
     },
     400: {
       content: { 'application/json': { schema: userFailureResponseSchema } },
-      description: 'Validation failed',
+      description:
+        'VALIDATION_ERROR: request fields violate their constraints; see errors.message for details.',
     },
     409: {
       content: { 'application/json': { schema: userFailureResponseSchema } },
-      description: 'Username taken',
+      description: 'USERNAME_TAKEN: the username is already in use.',
+    },
+    500: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'INTERNAL_ERROR: unexpected server failure. Use the x-request-id response header when requesting support.',
+    },
+    401: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'UNAUTHORIZED: missing Bearer access token, invalid token format or signature, or expired token.',
+    },
+    403: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'FORBIDDEN: the current role cannot perform this operation or access the target resource.',
     },
   },
 })
@@ -61,45 +84,91 @@ const listUsersRoute = createRoute({
   security: [{ bearerAuth: [] }],
   middleware: adminGuard,
   tags: ['Users'],
-  summary: 'List users with pagination and filters (admin)',
+  summary: 'List users with pagination (admin)',
+  description:
+    'Requires admin. Supports exact role/status filters and a case-insensitive keyword search across username and displayName. Filters apply together. Results are ordered by creation time ascending. data contains the user array and meta contains pagination details. No matches return an empty array.',
   request: { query: userListQuerySchema },
   responses: {
     200: {
       content: { 'application/json': { schema: userListResponseSchema } },
-      description: 'Paginated users',
+      description: 'OK: data contains the user array and meta contains pagination details.',
+    },
+    500: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'INTERNAL_ERROR: unexpected server failure. Use the x-request-id response header when requesting support.',
+    },
+    400: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'VALIDATION_ERROR: request fields violate their constraints; see errors.message for details.',
+    },
+    401: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'UNAUTHORIZED: missing Bearer access token, invalid token format or signature, or expired token.',
+    },
+    403: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'FORBIDDEN: the current role cannot perform this operation or access the target resource.',
     },
   },
 })
 
 const getUserRoute = createRoute({
   method: 'get',
-  path: '/api/users/:id',
+  path: '/api/users/{id}',
   operationId: 'getUser',
   security: [{ bearerAuth: [] }],
   middleware: adminGuard,
   tags: ['Users'],
-  summary: 'Read one user (admin)',
+  summary: 'Get user details (admin)',
+  description:
+    'Requires admin. Looks up public account details by user ID. A missing account returns USER_NOT_FOUND. Passwords and password hashes are never returned.',
   request: { params: idParamSchema },
   responses: {
     200: {
       content: { 'application/json': { schema: userResponseSchema } },
-      description: 'User',
+      description: 'OK: data contains the requested public user.',
     },
     404: {
       content: { 'application/json': { schema: userFailureResponseSchema } },
-      description: 'Not found',
+      description: 'USER_NOT_FOUND: the target user does not exist.',
+    },
+    500: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'INTERNAL_ERROR: unexpected server failure. Use the x-request-id response header when requesting support.',
+    },
+    400: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'VALIDATION_ERROR: request fields violate their constraints; see errors.message for details.',
+    },
+    401: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'UNAUTHORIZED: missing Bearer access token, invalid token format or signature, or expired token.',
+    },
+    403: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'FORBIDDEN: the current role cannot perform this operation or access the target resource.',
     },
   },
 })
 
 const updateUserRoute = createRoute({
   method: 'patch',
-  path: '/api/users/:id',
+  path: '/api/users/{id}',
   operationId: 'updateUser',
   security: [{ bearerAuth: [] }],
   middleware: adminGuard,
   tags: ['Users'],
-  summary: 'Update a user (admin)',
+  summary: 'Update user details and permissions (admin)',
+  description:
+    'Requires admin. Partially updates displayName, role, or status; at least one defined field is required. Omitted fields remain unchanged and displayName=null clears the display name. The username cannot be changed. Administrators cannot submit a role update for themselves, even with the same value, or disable their own account. Role changes and disabling may take until existing access tokens expire to affect ordinary routes.',
   request: {
     params: idParamSchema,
     body: { content: { 'application/json': { schema: updateUserRequestSchema } }, required: true },
@@ -107,31 +176,45 @@ const updateUserRoute = createRoute({
   responses: {
     200: {
       content: { 'application/json': { schema: userResponseSchema } },
-      description: 'Updated user',
+      description: 'OK: data contains the updated public user.',
     },
     400: {
       content: { 'application/json': { schema: userFailureResponseSchema } },
-      description: 'Validation failed',
+      description:
+        'VALIDATION_ERROR: request fields violate their constraints; see errors.message for details.',
     },
     403: {
       content: { 'application/json': { schema: userFailureResponseSchema } },
-      description: 'Self-modification forbidden',
+      description:
+        'FORBIDDEN: administrator role required; or SELF_MODIFICATION_FORBIDDEN: attempted to change the their own administrator role or disable their own account.',
     },
     404: {
       content: { 'application/json': { schema: userFailureResponseSchema } },
-      description: 'Not found',
+      description: 'USER_NOT_FOUND: the target user does not exist.',
+    },
+    500: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'INTERNAL_ERROR: unexpected server failure. Use the x-request-id response header when requesting support.',
+    },
+    401: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'UNAUTHORIZED: missing Bearer access token, invalid token format or signature, or expired token.',
     },
   },
 })
 
 const resetPasswordRoute = createRoute({
   method: 'post',
-  path: '/api/users/:id/reset-password',
+  path: '/api/users/{id}/reset-password',
   operationId: 'resetPassword',
   security: [{ bearerAuth: [] }],
   middleware: adminGuard,
   tags: ['Users'],
   summary: 'Reset a user password (admin)',
+  description:
+    'Requires admin. Sets a new password of 8-128 characters and stores its hash. A missing account returns USER_NOT_FOUND. Success returns only the envelope, without data. Existing access tokens and refresh tokens are not revoked by this operation.',
   request: {
     params: idParamSchema,
     body: {
@@ -142,15 +225,31 @@ const resetPasswordRoute = createRoute({
   responses: {
     200: {
       content: { 'application/json': { schema: resetPasswordResponseSchema } },
-      description: 'Password reset',
+      description: 'OK: the password was reset. The response omits data.',
     },
     400: {
       content: { 'application/json': { schema: userFailureResponseSchema } },
-      description: 'Validation failed',
+      description:
+        'VALIDATION_ERROR: request fields violate their constraints; see errors.message for details.',
     },
     404: {
       content: { 'application/json': { schema: userFailureResponseSchema } },
-      description: 'Not found',
+      description: 'USER_NOT_FOUND: the target user does not exist.',
+    },
+    500: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'INTERNAL_ERROR: unexpected server failure. Use the x-request-id response header when requesting support.',
+    },
+    401: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'UNAUTHORIZED: missing Bearer access token, invalid token format or signature, or expired token.',
+    },
+    403: {
+      content: { 'application/json': { schema: userFailureResponseSchema } },
+      description:
+        'FORBIDDEN: the current role cannot perform this operation or access the target resource.',
     },
   },
 })

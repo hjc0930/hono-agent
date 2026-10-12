@@ -46,8 +46,8 @@ The public ticket object (used by create/list/detail responses):
 ```json
 {
   "id": "uuid",
-  "title": "登录失败",
-  "description": "用户无法登录，提示密码错误",
+  "title": "Login Failed",
+  "description": "The user cannot log in and receives an incorrect password error",
   "categoryId": "uuid",
   "priority": "medium",
   "status": "pending",
