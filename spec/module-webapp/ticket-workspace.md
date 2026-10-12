@@ -96,16 +96,16 @@ Unauthenticated visits to protected routes go to `/login`; after successful logi
 
 ## Role and workflow matrix
 
-| Capability | `user` | `agent` | `admin` |
-| --- | --- | --- | --- |
-| List/read tickets | Own tickets only | All tickets | All tickets |
-| Create ticket | As self | As self or on behalf of a requester | As self or on behalf of a requester |
-| Public comment | Own tickets | Any ticket | Any ticket |
-| Internal comment | No | Any ticket | Any ticket |
-| Assign/reassign handler | No | No (self-claim is not in scope) | Yes, to an active agent/admin |
-| Read categories | Yes | Yes | Yes |
-| Create/update categories | No | No | Yes |
-| Manage users | No | No | Yes |
+| Capability               | `user`           | `agent`                             | `admin`                             |
+| ------------------------ | ---------------- | ----------------------------------- | ----------------------------------- |
+| List/read tickets        | Own tickets only | All tickets                         | All tickets                         |
+| Create ticket            | As self          | As self or on behalf of a requester | As self or on behalf of a requester |
+| Public comment           | Own tickets      | Any ticket                          | Any ticket                          |
+| Internal comment         | No               | Any ticket                          | Any ticket                          |
+| Assign/reassign handler  | No               | No (self-claim is not in scope)     | Yes, to an active agent/admin       |
+| Read categories          | Yes              | Yes                                 | Yes                                 |
+| Create/update categories | No               | No                                  | Yes                                 |
+| Manage users             | No               | No                                  | Yes                                 |
 
 Status controls must follow `ticket-state-machine.md`; this matrix does not grant actions that the state machine disallows.
 
