@@ -3,9 +3,10 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 
-import App from './app.tsx'
-import { AuthProvider } from './auth.tsx'
-import './styles.css'
+import { GlobalStyles } from '../components/common/GlobalStyles.tsx'
+import { UiStyles } from '../components/common/UiStyles.tsx'
+import App from './App.tsx'
+import { AuthProvider } from '../hooks/useAuth.tsx'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,6 +24,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <AuthProvider>
           <App />
+          <GlobalStyles />
+          <UiStyles />
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
