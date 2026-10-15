@@ -1,15 +1,13 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router'
 import type { ReactNode } from 'react'
-import { useAuth } from './auth.tsx'
-import { AppShell, NotFound } from './components.tsx'
-import {
-  CategoriesPage,
-  LoginPage,
-  NewTicketPage,
-  TicketDetailPage,
-  TicketsPage,
-  UsersPage,
-} from './pages.tsx'
+import { useAuth } from '../hooks/useAuth.tsx'
+import { AppShell, NotFound } from '../components/index.tsx'
+import { LoginPage } from '../views/LoginView.tsx'
+import { TicketsPage } from '../views/tickets/TicketsView.tsx'
+import { NewTicketPage } from '../views/tickets/NewTicketView.tsx'
+import { TicketDetailPage } from '../views/tickets/TicketDetailView.tsx'
+import { UsersPage } from '../views/users/UsersView.tsx'
+import { CategoriesPage } from '../views/categories/CategoriesView.tsx'
 
 const ProtectedRoute = () => {
   const { session } = useAuth()

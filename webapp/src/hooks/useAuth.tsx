@@ -7,7 +7,7 @@ import {
   subscribeSession,
   type TokenSession,
   type User,
-} from './api.ts'
+} from '../apis/client.ts'
 
 type AuthContextValue = {
   session: TokenSession | null
