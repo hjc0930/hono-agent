@@ -103,6 +103,10 @@ swagger:     http://localhost:<port>/docs
 openApi:     http://localhost:<port>/openapi.json
 ```
 
+## Logging
+
+Development logs use `pino-pretty` with readable local timestamps and terminal colors when supported. Production and test logs remain structured JSON. `LOG_LEVEL` controls verbosity in every environment (default `info`). Set `NODE_ENV=production` when deploying; `pino-pretty` is a development dependency and is not required in production. See [the logging specification](./spec/common/logging.md).
+
 ## Graceful shutdown
 
 The server handles `SIGINT` (Ctrl+C) and `SIGTERM` by stopping new HTTP
