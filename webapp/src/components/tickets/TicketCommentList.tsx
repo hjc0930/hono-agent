@@ -1,4 +1,4 @@
-import { formatDate, type Comment } from '../../apis/client.ts'
+import { formatDate, type Comment } from '../../services/client.ts'
 import { EmptyState } from '../common/EmptyState.tsx'
 import { ErrorState } from '../common/ErrorState.tsx'
 import { Loading } from '../common/Loading.tsx'

@@ -1,4 +1,4 @@
-import type { Priority, TicketStatus } from '../../apis/client.ts'
+import type { Priority, TicketStatus } from '../../services/client.ts'
 
 const badgeStyles = String.raw`
 .badge { display:inline-flex; min-height:23px; align-items:center; padding:0 8px; border:1px solid transparent; border-radius:999px; font-size:10px; font-weight:700; white-space:nowrap; }

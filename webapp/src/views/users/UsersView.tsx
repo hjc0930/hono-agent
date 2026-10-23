@@ -8,7 +8,7 @@ import {
   type PageMeta,
   type Role,
   type User,
-} from '../../apis/client.ts'
+} from '../../services/client.ts'
 import { EmptyState, ErrorState, Loading, PageHeader, Pagination } from '../../components/index.tsx'
 import { UserForm } from '../../components/users/UserForm.tsx'
 

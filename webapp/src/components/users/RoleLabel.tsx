@@ -1,4 +1,4 @@
-import type { Role } from '../../apis/client.ts'
+import type { Role } from '../../services/client.ts'
 
 const roleLabels: Record<Role, string> = { admin: '管理员', agent: '处理人员', user: '普通用户' }
 

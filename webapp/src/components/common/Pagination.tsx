@@ -1,4 +1,4 @@
-import type { PageMeta } from '../../apis/client.ts'
+import type { PageMeta } from '../../services/client.ts'
 
 const paginationStyles = String.raw`
 .pagination { display:flex; align-items:center; justify-content:space-between; gap:15px; padding:15px 22px; border-top:1px solid #edf0ee; color:var(--muted); font-size:11px; }

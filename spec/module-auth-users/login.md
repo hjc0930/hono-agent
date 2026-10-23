@@ -162,17 +162,20 @@ When `findByUsername` returns null, the service still runs `verifyPassword(passw
 
 Request bodies stay flat (no `data` wrapper). Response shapes are governed entirely by `common/api-response-comment.md`; this module only decides which optional fields each endpoint uses: login and refresh return `data`, logout returns none.
 
-### D6. Initial admin — internal bootstrap utility
+Login accepts non-empty passwords up to 128 characters to support the local bootstrap fixture. Account creation and password reset retain their 8-character minimum.
 
-`src/db/seed.ts` is retained as an internal utility and is intentionally not exposed as a package script. Behavior:
+### D6. Initial admin — bootstrap utility
+
+`src/db/seed.ts` bootstraps an administrator. `pnpm run db:seed:local` exposes a one-command local-development wrapper: it forces an empty `DATABASE_URL` to use `.data/pglite` and supplies development-only placeholders for `JWT_SECRET`, username `admin`, and password `admin`. `--local` permits a 1-128 character bootstrap password only with an empty `DATABASE_URL`; the standard bootstrap and user-management password rules remain 8-128 characters. The password is a public local-development fixture, not a production credential. Stop the local backend before running this command. Behavior:
 
 1. Validate config with a pure, unit-testable `validateSeedConfig(env)` → `{ username, password }` or a listed error:
    - `SEED_ADMIN_PASSWORD` missing, or not 8–128 chars → error (refuse; never default the password).
    - `SEED_ADMIN_USERNAME` missing → default `admin`; must satisfy the username regex.
-   - `DATABASE_URL` missing → error.
-2. Connect with the Drizzle client; if the username already exists → log `seed skipped: user exists` and exit 0 (idempotent).
-3. Otherwise insert `{ username, password_hash: await hashPassword(password), role: 'admin', status: 'active' }`; log `seed created admin user` (username only).
-4. Exit codes: 0 = created or skipped, 1 = invalid config or database failure. The password value is never logged.
+   - Empty `DATABASE_URL` uses local PGlite; a configured URL selects PostgreSQL.
+2. Apply committed database migrations before looking up or creating the administrator.
+3. Connect with the Drizzle client; if the username already exists, standard mode skips it. Local mode resets its password, role to `admin`, and status to `active`, preserving its ID and related records.
+4. Otherwise insert `{ username, password_hash: await hashPassword(password), role: 'admin', status: 'active' }`; log `seed created admin user` (username only).
+5. Exit codes: 0 = created, updated, or skipped, 1 = invalid config or database failure. The password value is never logged. Direct execution closes the database on both success and failure.
 
 ### D7. Test isolation — repository interfaces with injectable fakes
 

@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../hooks/useAuth.tsx'
-import { displayName } from '../../apis/client.ts'
+import { displayName } from '../../services/client.ts'
 
 const layoutStyles = String.raw`
 .app-shell {

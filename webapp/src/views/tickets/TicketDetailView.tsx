@@ -11,7 +11,7 @@ import {
   type Ticket,
   type TicketStatus,
   type User,
-} from '../../apis/client.ts'
+} from '../../services/client.ts'
 import { useAuth } from '../../hooks/useAuth.tsx'
 import {
   ErrorState,

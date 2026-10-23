@@ -33,11 +33,11 @@ pnpm --filter hono-agent-webapp preview
 
 ## 源码目录
 
-- `src/app/`：应用入口、路由和全局 provider。
+- `src/main.tsx` 与 `src/App.tsx`：应用入口、路由和全局 provider。
 - `src/views/`：按业务域组织的路由页面；工单、用户、分类页面各自拆分。
 - `src/components/`：跨页面共享组件和业务组件，按 `common/`、`layout/`、`tickets/`、`users/`、`categories/` 分类。
 - `src/hooks/`：React hooks 与认证状态 Provider。
-- `src/apis/`：API 客户端及请求类型。
+- `src/services/`：API 客户端及请求类型。
 - 样式直接以内联 `<style>` 内容维护在对应 TSX 中：通用规则位于 `components/common/GlobalStyles.tsx`，工作台布局位于 `components/layout/AppShell.tsx`，工单样式位于 `components/tickets/TicketBadges.tsx`，登录和 404 样式分别位于对应页面组件中；不再使用独立 CSS 文件。
 
 页面 View 负责数据请求和页面级状态；表单等组件接收数据与回调，负责局部交互和展示。

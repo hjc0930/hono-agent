@@ -8,7 +8,7 @@ import {
   type Priority,
   type Ticket,
   type User,
-} from '../../apis/client.ts'
+} from '../../services/client.ts'
 import { useAuth } from '../../hooks/useAuth.tsx'
 import { FieldError, PageHeader } from '../../components/index.tsx'
 

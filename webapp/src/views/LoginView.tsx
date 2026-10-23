@@ -109,7 +109,7 @@ const loginStyles = String.raw`
 const validateLogin = (username: string, password: string) => {
   if (!/^[a-z0-9_-]{3,32}$/.test(username))
     return '用户名须为 3–32 位小写字母、数字、下划线或连字符。'
-  if (password.length < 8 || password.length > 128) return '密码长度须为 8–128 位。'
+  if (password.length < 1 || password.length > 128) return '请输入密码，最多 128 位。'
   return ''
 }
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Role, User } from '../../apis/client.ts'
+import type { Role, User } from '../../services/client.ts'
 
 const roleText: Record<Role, string> = { admin: '管理员', agent: '处理人员', user: '普通用户' }
 

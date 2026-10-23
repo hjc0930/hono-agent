@@ -16,7 +16,8 @@
     "build": "pnpm run typecheck && tsdown",
     "start": "node --enable-source-maps dist/server.js",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/db/migrate.ts"
+    "db:migrate": "tsx src/db/migrate.ts",
+    "db:seed:local": "DATABASE_URL= JWT_SECRET=local-development-only-placeholder-at-least-32-chars SEED_ADMIN_USERNAME=admin SEED_ADMIN_PASSWORD=admin tsx src/db/seed.ts --local"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.8",

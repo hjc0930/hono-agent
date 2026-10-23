@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router'
 import { useState } from 'react'
-import { api, queryString, type Category, type PageMeta } from '../../apis/client.ts'
+import { api, queryString, type Category, type PageMeta } from '../../services/client.ts'
 import { useAuth } from '../../hooks/useAuth.tsx'
 import { EmptyState, ErrorState, Loading, PageHeader, Pagination } from '../../components/index.tsx'
 import { CategoryForm } from '../../components/categories/CategoryForm.tsx'

@@ -16,8 +16,9 @@ export const usernameSchema = z
 
 export const loginRequestSchema = z.object({
   username: usernameSchema,
-  password: z.string().min(8).max(128).openapi({
-    description: 'Password of 8-128 characters. Request-only; never included in a response.',
+  password: z.string().min(1).max(128).openapi({
+    description:
+      'Password of 1-128 characters; account creation requires at least 8 characters. Request-only; never included in a response.',
     writeOnly: true,
   }),
 })

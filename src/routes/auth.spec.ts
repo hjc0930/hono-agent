@@ -34,6 +34,27 @@ const post = (app: ReturnType<typeof createApp>, path: string, body: unknown, to
   })
 
 describe('POST /api/auth/login (route)', () => {
+  it('accepts the local admin password at login', async () => {
+    const shortHash = await hashPassword('admin')
+    const localUsers = new MemoryUserRepository()
+    await localUsers.insert({
+      username: 'admin',
+      passwordHash: shortHash,
+      displayName: null,
+      role: 'admin',
+      status: 'active',
+    })
+    const localApp = createApp({
+      userRepository: localUsers,
+      refreshTokenRepository: new MemoryRefreshTokenRepository(),
+    })
+    const response = await post(localApp, '/api/auth/login', {
+      username: 'admin',
+      password: 'admin',
+    })
+    expect(response.status).toBe(200)
+  })
+
   it('returns the token pair in the common envelope and matches the response schema', async () => {
     const { app } = await buildApp()
 
@@ -88,7 +109,7 @@ describe('POST /api/auth/login (route)', () => {
 
     const invalidResponse = await post(app, '/api/auth/login', {
       username: 'Bad Name',
-      password: 'short',
+      password: '',
     })
     expect(invalidResponse.status).toBe(400)
     const invalidBody = await invalidResponse.json()

@@ -52,6 +52,16 @@ Do not edit a migration that has already been shared or applied. Make the next s
 
 Local PGlite data is stored under `.data/pglite/` and must not be committed.
 
+## Local development administrator
+
+Stop the local backend, then run from the repository root:
+
+```bash
+pnpm run db:seed:local
+```
+
+This applies committed migrations to local PGlite and creates username `admin` with the public development-only password `admin`. It forces an empty `DATABASE_URL`, so it always targets `.data/pglite`, even when `.env` configures PostgreSQL. An existing local account is reset to the development password, enabled, and assigned the admin role while preserving its ID and related tickets. Restart the backend with `DATABASE_URL` empty to use this local account. Do not use this development password for deployed accounts.
+
 ## Commands
 
 ```bash

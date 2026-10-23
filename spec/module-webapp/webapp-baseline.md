@@ -25,6 +25,13 @@ Create a separately scoped React web application in `webapp/` as a pnpm workspac
 - During local development, proxy `/api/*` and `/health` to the Hono backend. The target defaults to `http://localhost:3000` and can be overridden with `VITE_API_PROXY_TARGET`.
 - Preserve the backend API response and authentication contracts; frontend feature work must follow the relevant module specification.
 
+## Source organization
+
+- `src/main.tsx` owns application startup and global providers; `src/App.tsx` defines client-side routes.
+- `src/services/` contains the API client, request types, and session request handling.
+- `src/views/`, `src/components/`, and `src/hooks/` contain route pages, reusable components, and React hooks respectively.
+- `index.html` loads `/src/main.tsx` as the application entry point.
+
 ## Baseline acceptance
 
 - `webapp/` contains a minimal React application with client-side routing and query-provider setup.

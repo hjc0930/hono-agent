@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Category } from '../../apis/client.ts'
+import type { Category } from '../../services/client.ts'
 
 export const CategoryForm = ({
   initial,

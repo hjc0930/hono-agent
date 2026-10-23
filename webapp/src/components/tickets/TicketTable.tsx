@@ -5,7 +5,7 @@ import {
   type Category,
   type Ticket,
   type User,
-} from '../../apis/client.ts'
+} from '../../services/client.ts'
 import { PriorityBadge, StatusBadge } from './TicketBadges.tsx'
 
 const ticketTableStyles = String.raw`
