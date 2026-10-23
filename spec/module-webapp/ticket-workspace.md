@@ -60,6 +60,7 @@ Unauthenticated visits to protected routes go to `/login`; after successful logi
 
 ### Create ticket — `/tickets/new`
 
+- Render as an independent child page under the `/tickets` route. Show a “工单 > 新建工单” breadcrumb with a link to `/tickets`, a current-page label, and an explicit return-to-tickets action. Keep the ticket navigation selected; the ticket list remains the `/tickets` index page.
 - Load enabled categories and require a category selection. Provide title (1–200 characters), description (1–5000 characters), and priority (`low`, `medium`, `high`, `urgent`; default `medium`).
 - For `user`, omit requester selection and let the API assign the current user. Admins may select an optional requester using the admin-only user list API. Agents may optionally enter a requester UUID because `/api/users` is admin-only; a requester lookup endpoint for agents is not currently specified. Do not allow a `user` to impersonate another requester.
 - Keep field-level validation errors on the form. On success, show confirmation and navigate to the created ticket detail.
@@ -152,6 +153,7 @@ The current implementation keeps tokens in memory only and intentionally returns
 
 ## Unit test expectations
 
+- Verify that `/tickets` renders the ticket list and `/tickets/new` renders the independent creation page with its breadcrumb, return action, and selected ticket navigation.
 - Add colocated unit/component tests for session transitions, role-based navigation visibility, ticket filter serialization, envelope/error parsing, and the state-dependent action list.
 - Test requester visibility assumptions and internal-comment presentation with representative role fixtures. Backend authorization remains covered by backend tests.
 - Keep tests hermetic; do not require a running API, database, network access, or real credentials.
