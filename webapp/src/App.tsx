@@ -33,9 +33,11 @@ const App = () => (
   <Routes>
     <Route element={<LoginRoute />} path="/login" />
     <Route element={<ProtectedRoute />}>
-      <Route element={<TicketsPage />} path="/tickets" />
-      <Route element={<NewTicketPage />} path="/tickets/new" />
-      <Route element={<TicketDetailPage />} path="/tickets/:id" />
+      <Route path="/tickets">
+        <Route index element={<TicketsPage />} />
+        <Route element={<NewTicketPage />} path="new" />
+        <Route element={<TicketDetailPage />} path=":id" />
+      </Route>
       <Route element={<CategoriesPage />} path="/categories" />
       <Route
         element={

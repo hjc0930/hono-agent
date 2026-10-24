@@ -31,6 +31,7 @@ Create a separately scoped React web application in `webapp/` as a pnpm workspac
 - `src/services/` contains the API client, request types, and session request handling.
 - `src/views/`, `src/components/`, and `src/hooks/` contain route pages, reusable components, and React hooks respectively.
 - `index.html` loads `/src/main.tsx` as the application entry point.
+- Workspace navigation includes tickets, categories, and administrator-only user management. Ticket creation is accessed from the ticket list instead of a separate workspace navigation item.
 
 ## Baseline acceptance
 

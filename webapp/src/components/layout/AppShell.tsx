@@ -195,9 +195,6 @@ export const AppShell = () => {
           <NavLink className={active} to="/tickets">
             <span className="nav-symbol">▤</span>工单
           </NavLink>
-          <NavLink className={active} to="/tickets/new">
-            <span className="nav-symbol">＋</span>新建工单
-          </NavLink>
           <NavLink className={active} to="/categories">
             <span className="nav-symbol">◇</span>工单分类
           </NavLink>

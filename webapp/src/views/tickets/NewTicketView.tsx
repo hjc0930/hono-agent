@@ -75,10 +75,24 @@ export const NewTicketPage = () => {
 
   return (
     <div className="page-container narrow-container">
+      <nav aria-label="面包屑" style={{ marginBottom: 20, fontSize: 13 }}>
+        <Link className="text-button" to="/tickets">
+          工单
+        </Link>
+        <span aria-hidden="true" className="muted" style={{ margin: '0 10px' }}>
+          &gt;
+        </span>
+        <span aria-current="page">新建工单</span>
+      </nav>
       <PageHeader
         eyebrow="工单管理"
         title="新建工单"
         description="描述问题并选择合适的分类，方便团队及时跟进。"
+        action={
+          <Link className="button button-secondary" to="/tickets">
+            ← 返回工单
+          </Link>
+        }
       />
       <form className="panel form-panel form-stack" onSubmit={submit}>
         <label>
