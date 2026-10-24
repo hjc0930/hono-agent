@@ -108,7 +108,7 @@ The frontend is a client-rendered React application in `webapp/`, built with Vit
 
 ## Testing strategy
 
-- Colocated unit tests plus the E2E suite under `test/`; tests stay hermetic (no live database required unless a future specification introduces one deliberately).
+- Colocated unit tests plus the E2E suite under `test/`; tests stay hermetic (no live database). `vitest.setup.ts` forces every suite onto an isolated in-memory PGlite (`DATABASE_TYPE=pglite`, `DATABASE_URL=memory://`), and E2E suites build schema and seed data through `runMigrations()` and the exported seed helpers.
 - The state machine must be tested for every legal transition and a representative set of illegal ones.
 - Comment visibility must be tested: requesters cannot read internal notes.
 

@@ -14,25 +14,26 @@ pnpm install
 cp .env.example .env
 ```
 
-Do not commit `.env`. Local development uses embedded PGlite when `DATABASE_URL` is empty; production can connect to PostgreSQL through `DATABASE_URL`.
+Do not commit `.env`. The database engine is selected by `DATABASE_TYPE` (`postgres` or `pglite`); when `DATABASE_TYPE` is unset, a URL-shaped `DATABASE_URL` selects PostgreSQL and anything else falls back to embedded PGlite under `.data/pglite`. For `pglite`, `DATABASE_URL` is the data directory (or `memory://` for an in-memory database).
 
 ## Environment variables
 
-| Name                             | Default       | Description                                            |
-| -------------------------------- | ------------- | ------------------------------------------------------ |
-| `NODE_ENV`                       | `development` | `development`, `test`, or `production`                 |
-| `PORT`                           | `3000`        | HTTP server port                                       |
-| `SHUTDOWN_TIMEOUT_MS`            | `10000`       | Total graceful shutdown timeout in milliseconds        |
-| `LOG_LEVEL`                      | `info`        | Pino log level                                         |
-| `CORS_ORIGINS`                   | empty         | Comma-separated browser origins allowed for `/api/*`   |
-| `DATABASE_URL`                   | empty         | PostgreSQL URL; empty uses embedded PGlite locally     |
-| `JWT_SECRET`                     | empty         | HS256 signing key for access tokens; at least 32 chars |
-| `AUTH_ACCESS_TOKEN_TTL_SECONDS`  | `900`         | Access-token lifetime in seconds                       |
-| `AUTH_REFRESH_TOKEN_TTL_SECONDS` | `604800`      | Refresh-token lifetime in seconds                      |
-| `AUTH_MAX_LOGIN_FAILURES`        | `5`           | Per-account failed-login threshold                     |
-| `AUTH_LOCKOUT_SECONDS`           | `900`         | Account lockout duration in seconds                    |
-| `AUTH_IP_FAILURE_LIMIT`          | `20`          | Per-IP failed-login threshold                          |
-| `AUTH_IP_WINDOW_SECONDS`         | `900`         | Per-IP failed-login window in seconds                  |
+| Name                             | Default       | Description                                                          |
+| -------------------------------- | ------------- | -------------------------------------------------------------------- |
+| `NODE_ENV`                       | `development` | `development`, `test`, or `production`                               |
+| `PORT`                           | `3000`        | HTTP server port                                                     |
+| `SHUTDOWN_TIMEOUT_MS`            | `10000`       | Total graceful shutdown timeout in milliseconds                      |
+| `LOG_LEVEL`                      | `info`        | Pino log level                                                       |
+| `CORS_ORIGINS`                   | empty         | Comma-separated browser origins allowed for `/api/*`                 |
+| `DATABASE_TYPE`                  | inferred      | `postgres` or `pglite`; inferred from `DATABASE_URL` when unset      |
+| `DATABASE_URL`                   | empty         | PostgreSQL URL, or PGlite data directory when `DATABASE_TYPE=pglite` |
+| `JWT_SECRET`                     | empty         | HS256 signing key for access tokens; at least 32 chars               |
+| `AUTH_ACCESS_TOKEN_TTL_SECONDS`  | `900`         | Access-token lifetime in seconds                                     |
+| `AUTH_REFRESH_TOKEN_TTL_SECONDS` | `604800`      | Refresh-token lifetime in seconds                                    |
+| `AUTH_MAX_LOGIN_FAILURES`        | `5`           | Per-account failed-login threshold                                   |
+| `AUTH_LOCKOUT_SECONDS`           | `900`         | Account lockout duration in seconds                                  |
+| `AUTH_IP_FAILURE_LIMIT`          | `20`          | Per-IP failed-login threshold                                        |
+| `AUTH_IP_WINDOW_SECONDS`         | `900`         | Per-IP failed-login window in seconds                                |
 
 ## Database workflow
 
@@ -60,7 +61,7 @@ Stop the local backend, then run from the repository root:
 pnpm run db:seed:local
 ```
 
-This applies committed migrations to local PGlite and creates username `admin` with the public development-only password `admin`. It forces an empty `DATABASE_URL`, so it always targets `.data/pglite`, even when `.env` configures PostgreSQL. An existing local account is reset to the development password, enabled, and assigned the admin role while preserving its ID and related tickets. Restart the backend with `DATABASE_URL` empty to use this local account. Do not use this development password for deployed accounts.
+This applies committed migrations to local PGlite and creates username `admin` with the public development-only password `admin`. It forces an empty `DATABASE_URL`, so it always targets `.data/pglite`, even when `.env` configures PostgreSQL. Tests never touch that directory: `vitest.setup.ts` forces `DATABASE_TYPE=pglite` with the in-memory `DATABASE_URL=memory://` for every suite. An existing local account is reset to the development password, enabled, and assigned the admin role while preserving its ID and related tickets. Restart the backend with `DATABASE_URL` empty to use this local account. Do not use this development password for deployed accounts.
 
 ## Commands
 

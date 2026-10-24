@@ -7,15 +7,14 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 
 import { logger } from '../lib/logger.ts'
 import * as schema from './schema.ts'
-import { databaseUrl, getDatabase } from './client.ts'
+import { databaseConfig } from '../config/env.ts'
+import { getDatabase } from './client.ts'
 
 export const runMigrations = async (): Promise<void> => {
   const db = getDatabase()
-  if (databaseUrl) {
-    // Remote PostgreSQL.
+  if (databaseConfig.type === 'postgres') {
     await migrateNodePg(db as NodePgDatabase<typeof schema>, { migrationsFolder: './drizzle' })
   } else {
-    // Embedded PGlite.
     await migratePg(db as PgliteDatabase<typeof schema>, { migrationsFolder: './drizzle' })
   }
 }

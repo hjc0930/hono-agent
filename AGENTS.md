@@ -5,7 +5,7 @@ This file defines how agents should work in the Hono Agent Backend repository.
 ## Project Context
 
 - This is a ticket-system backend built with Node.js, Hono, and TypeScript.
-- Persistence uses Drizzle ORM. When `DATABASE_URL` is configured, PostgreSQL uses the `node-postgres` adapter; otherwise, the application uses embedded PGlite persisted under `.data/pglite`.
+- Persistence uses Drizzle ORM. `DATABASE_TYPE` (`postgres` or `pglite`) selects the engine; when unset, a URL-shaped `DATABASE_URL` selects the `node-postgres` adapter and anything else falls back to embedded PGlite. With `pglite`, `DATABASE_URL` is the data directory (default `.data/pglite`, or `memory://`). Tests force an isolated in-memory PGlite via `vitest.setup.ts`.
 - `src/db/client.ts` owns lazy database initialization and cleanup; `src/db/schema.ts` defines the database schema.
 - `src/main.ts` composes the application, `src/server.ts` handles startup, and `src/lib/shutdown.ts` coordinates graceful shutdown.
 - `src/openapi.ts` configures OpenAPI and Swagger documentation; public contracts are defined in routes and Zod schemas.

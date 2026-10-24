@@ -108,13 +108,14 @@ All errors use JSON in this shape:
 
 Runtime configuration is parsed at startup with Zod. Required variables are documented in `.env.example`; no real `.env` is committed.
 
-| Variable       | Required            | Default / constraint                                       | Purpose                                                                        |
-| -------------- | ------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `NODE_ENV`     | No                  | `development`; `development`, `test`, or `production`      | Runtime mode.                                                                  |
-| `PORT`         | No                  | `3000`; valid TCP port                                     | Preferred HTTP listener port; startup scans higher ports if it is occupied.    |
-| `LOG_LEVEL`    | No                  | `info`                                                     | Pino severity threshold.                                                       |
-| `CORS_ORIGINS` | No                  | empty                                                      | Comma-separated allow-list for `/api/*`; empty denies cross-origin API access. |
-| `DATABASE_URL` | No in this baseline | Valid PostgreSQL URL when database features are introduced | Reserved for future Drizzle configuration.                                     |
+| Variable        | Required            | Default / constraint                                                   | Purpose                                                                                                              |
+| --------------- | ------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`      | No                  | `development`; `development`, `test`, or `production`                  | Runtime mode.                                                                                                        |
+| `PORT`          | No                  | `3000`; valid TCP port                                                 | Preferred HTTP listener port; startup scans higher ports if it is occupied.                                          |
+| `LOG_LEVEL`     | No                  | `info`                                                                 | Pino severity threshold.                                                                                             |
+| `CORS_ORIGINS`  | No                  | empty                                                                  | Comma-separated allow-list for `/api/*`; empty denies cross-origin API access.                                       |
+| `DATABASE_TYPE` | No                  | `postgres` or `pglite`; inferred from `DATABASE_URL` when unset        | Explicit database engine selection.                                                                                  |
+| `DATABASE_URL`  | No in this baseline | PostgreSQL URL, or a PGlite data directory when `DATABASE_TYPE=pglite` | Database connection or embedded storage location (default `.data/pglite`, or `memory://` for an in-memory database). |
 
 ## OpenAPI and Swagger
 
@@ -221,6 +222,16 @@ Updated on 2026-09-24:
 
 - The product direction was set to a ticket system backend; see `spec/0002-ticket-system-roadmap.md`.
 - The exploratory AI/Agent integration references in this specification were removed. The baseline scope itself is unchanged.
+
+## Database selection record
+
+Updated on 2026-10-24:
+
+- `DATABASE_TYPE` (`postgres` or `pglite`) explicitly selects the database engine. When unset, configuration keeps the historical inference: a URL-shaped `DATABASE_URL` selects `postgres`, and an empty or missing `DATABASE_URL` selects embedded PGlite.
+- With `pglite`, `DATABASE_URL` names the PGlite data location: a filesystem directory (default `.data/pglite`) or `memory://` for an in-memory database that touches no files.
+- With `postgres`, `DATABASE_URL` must be a valid URL; a `postgres` selection without it fails startup validation. A non-URL `DATABASE_URL` with the type unset or `postgres` also fails validation.
+- `src/config/env.ts` resolves both variables into a single `databaseConfig` export that `src/db/client.ts` and `src/db/migrate.ts` consume; the client no longer infers the engine itself.
+- `vitest.setup.ts` forces `DATABASE_TYPE=pglite` with `DATABASE_URL=memory://` for every test file, so unit and E2E suites run on an isolated in-memory PGlite and can never reach a developer's `.data/pglite` directory or a shell-inherited PostgreSQL URL. E2E suites that need schema and seed data call `runMigrations()` and the exported seed helpers in `beforeAll`, then `closeDatabase()` in `afterAll`.
 
 ## API response envelope record
 
